@@ -1,0 +1,50 @@
+svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Shield with star icon representing security and protection">
+  <defs>
+    <!-- Shield gradient with fallback colors -->
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a73e8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1557b0;stop-opacity:1" />
+    </linearGradient>
+    <!-- Star gradient with fallback colors -->
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e8f0fe;stop-opacity:1" />
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#1a73e8" flood-opacity="0.3"/>
+    </filter>
+    <!-- Reduced motion shadow for accessibility -->
+    <filter id="shadowStatic" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#1a73e8" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Shield body with gradient fill -->
+  <path d="M32 4 L12 12 L12 28 C12 42 20 52 32 58 C44 52 52 42 52 28 L52 12 Z"
+        fill="url(#shieldGrad)"
+        stroke="#1557b0"
+        stroke-width="1.5"
+        filter="url(#shadow)"
+        role="presentation"/>
+
+  <!-- Shield inner highlight for depth effect -->
+  <path d="M32 8 L16 14.5 L16 28 C16 40 22.5 48.5 32 53.5 C41.5 48.5 48 40 48 28 L48 14.5 Z"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="0.5"
+        stroke-opacity="0.2"
+        role="presentation"/>
+
+  <!-- Star shape with gradient fill -->
+  <path d="M32 20 L34.5 27 L42 27 L36 31.5 L38 39 L32 34.5 L26 39 L28 31.5 L22 27 L29.5 27 Z"
+        fill="url(#starGrad)"
+        stroke="#1a73e8"
+        stroke-width="0.5"
+        stroke-opacity="0.3"
+        role="presentation"/>
+
+  <!-- Accessibility description for screen readers -->
+  <desc>A blue shield icon with a white star in the center, representing security and protection</desc>
+</svg>
