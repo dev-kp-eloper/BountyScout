@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e8eaed;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a73e8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1557b0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#dadce0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dadce0;stop-opacity:0.3" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" rx="12" ry="12" fill="url(#bgGrad)"/>
+
+  <!-- Border -->
+  <rect x="1" y="1" width="398" height="298" rx="11" ry="11" fill="none" stroke="#dadce0" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.6"/>
+
+  <!-- Document Icon -->
+  <g transform="translate(200, 110)" filter="url(#shadow)">
+    <!-- Document body -->
+    <rect x="-36" y="-48" width="72" height="88" rx="6" ry="6" fill="url(#iconGrad)" opacity="0.9"/>
+    <!-- Document fold -->
+    <path d="M-10,-48 L-10,-24 L14,-24 L14,-48 Z" fill="#ffffff" opacity="0.15"/>
+    <!-- Code brackets -->
+    <text x="-18" y="-8" font-family="'Courier New', monospace" font-size="22" font-weight="700" fill="#ffffff" opacity="0.95">&lt;/&gt;</text>
+    <!-- Lines on document -->
+    <line x1="-24" y1="8" x2="24" y2="8" stroke="#ffffff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+    <line x1="-24" y1="18" x2="18" y2="18" stroke="#ffffff" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
+    <line x1="-24" y1="28" x2="12" y2="28" stroke="#ffffff" stroke-width="2" opacity="0.15" stroke-linecap="round"/>
+  </g>
+
+  <!-- Bounty badge -->
+  <g transform="translate(200, 178)">
+    <rect x="-44" y="-12" width="88" height="24" rx="12" ry="12" fill="#34a853" opacity="0.9"/>
+    <text x="0" y="4" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">BOUNTY PLACEHOLDER</text>
+  </g>
+
+  <!-- Decorative lines -->
+  <g transform="translate(200, 210)" opacity="0.4">
+    <line x1="-80" y1="0" x2="80" y2="0" stroke="url(#lineGrad)" stroke-width="1" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(200, 225)" opacity="0.25">
+    <line x1="-60" y1="0" x2="60" y2="0" stroke="url(#lineGrad)" stroke-width="1" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(200, 240)" opacity="0.15">
+    <line x1="-40" y1="0" x2="40" y2="0" stroke="url(#lineGrad)" stroke-width="1" stroke-linecap="round"/>
+  </g>
+
+  <!-- Corner decoration - top right -->
+  <g transform="translate(370, 20)" opacity="0.15">
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#1a73e8" stroke-width="1"/>
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#1a73e8" stroke-width="0.5"/>
+  </g>
+
+  <!-- Corner decoration - bottom left -->
+  <g transform="translate(30, 270)" opacity="0.15">
+    <circle cx="0" cy="0" r="25" fill="none" stroke="#1a73e8" stroke-width="1"/>
+    <circle cx="0" cy="0" r="15" fill="none" stroke="#1a73e8" stroke-width="0.5"/>
+  </g>
+</svg>
