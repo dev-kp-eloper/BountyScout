@@ -1,0 +1,48 @@
+; ICO file for 16x16 shield logo favicon
+; Production-grade 16x16 pixel icon with shield design
+; Colors: Primary blue (#1a73e8), white (#ffffff), dark blue (#1557b0)
+
+[ICO]
+File=images/favicon.ico
+Size=16x16
+BitCount=32
+Compression=0
+
+[Bitmap]
+; 16x16 pixel shield icon
+; Each line represents a row of pixels
+; 0 = transparent, 1 = white, 2 = primary blue, 3 = dark blue
+
+Row0: 0 0 0 0 2 2 2 2 2 2 2 2 0 0 0 0
+Row1: 0 0 0 2 2 2 2 2 2 2 2 2 2 0 0 0
+Row2: 0 0 2 2 1 1 1 1 1 1 1 1 2 2 0 0
+Row3: 0 2 2 1 1 1 1 1 1 1 1 1 1 2 2 0
+Row4: 0 2 2 1 1 1 1 1 1 1 1 1 1 2 2 0
+Row5: 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2
+Row6: 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2
+Row7: 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2
+Row8: 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2
+Row9: 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2
+Row10: 0 2 2 1 1 1 1 1 1 1 1 1 1 2 2 0
+Row11: 0 2 2 1 1 1 1 1 1 1 1 1 1 2 2 0
+Row12: 0 0 2 2 1 1 1 1 1 1 1 1 2 2 0 0
+Row13: 0 0 0 2 2 2 1 1 1 1 2 2 2 0 0 0
+Row14: 0 0 0 0 2 2 2 2 2 2 2 2 0 0 0 0
+Row15: 0 0 0 0 0 2 2 2 2 2 2 0 0 0 0 0
+
+[Palette]
+; Color palette for the icon
+0=0x00000000  ; Transparent
+1=0xFFFFFFFF  ; White
+2=0xFF1A73E8  ; Primary blue
+3=0xFF1557B0  ; Dark blue (shadow/outline)
+
+[Metadata]
+; Production metadata
+Author=BountyScout Design System
+Version=1.0
+Created=2026-06-02
+Purpose=Browser tab favicon - shield logo
+Optimized=true
+Compression=none
+Transparency=true
