@@ -1,71 +1,65 @@
-# 🎯 Bounty Scout: Hourly Notification System
+# BountyScout 🕵️
 
-A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties, filters out competitive/crypto spam, and alerts you instantly.
+Automated GitHub bounty scanner that monitors repositories for new bounty opportunities and posts them as issues.
 
-Since it tracks seen bounty URLs, **it will only notify you once per bounty** (no spam).
+## Features
 
----
+- 🔍 Scans multiple GitHub repositories for bounty-labeled issues
+- 📝 Automatically creates summary issues with all found bounties
+- 🧠 Remembers previously seen bounties to avoid duplicates
+- ⏰ Runs on a configurable schedule via GitHub Actions
 
-## 🚀 How It Works
+## Setup
 
-1. **GitHub Action Scheduled Trigger:** Runs automatically at minute `0` of every hour.
-2. **Scouts GitHub:** Queries active bounty search keywords using the GitHub Search API.
-3. **Triages Candidates:** Skips pull requests, already-assigned issues, overcrowded threads (>25 comments), and crypto-related spam.
-4. **State Machine Comparison:** Composed against `seen_bounties.json` to extract strictly **new** opportunities.
-5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord).
-6. **Persists State:** Saves the updated seen list back to the repository so you don't receive duplicate alerts on the next run.
+1. **Fork this repository**
+2. **Add a GitHub Token** as a repository secret named `GH_TOKEN` with `public_repo` scope
+3. **Configure target repositories** in `scout_bounties.py`:
+   - Edit the `REPOS` list to include repositories you want to monitor
+   - Each entry should be in the format `"owner/repo"`
+4. **Customize the schedule** in `.github/workflows/bounty-scout.yml` if needed
 
----
+## How It Works
 
-## 🛠️ Step-by-Step Setup
+1. The workflow runs on a schedule (default: every 6 hours) or can be triggered manually
+2. `scout_bounties.py` queries each configured repository for issues labeled with "bounty"
+3. New bounties are collected and formatted into a summary
+4. A new issue is created in this repository with the bounty report
+5. Previously seen bounties are tracked in `seen_bounties.json` to prevent duplicates
 
-### 1. Repository File Structure
-```text
-BountyScout/
-├── .github/
-│   └── workflows/
-│       └── bounty-scout.yml      # GitHub Actions workflow (hourly schedule)
-├── scout_bounties.py              # Core scout + notification script
-├── seen_bounties.json             # Auto-created on first run (state persistence)
-└── README.md
+## Configuration
+
+### Target Repositories
+
+Edit the `REPOS` list in `scout_bounties.py`:
+
+```python
+REPOS = [
+    "owner1/repo1",
+    "owner2/repo2",
+]
 ```
 
-### 2. Choose Your Notification Method
+### Scan Schedule
 
-#### 📬 Option A: Native GitHub Issues (Zero Setup - Recommended)
-The script will automatically open a structured issue labeled `bounty-alert` in your own repository containing links to the new opportunities.
-- **Why it's great:** Zero setup! You will get an email and/or mobile push notification directly from the GitHub app if you are watching your repository.
-- **Setup:** None required. The built-in `GITHUB_TOKEN` handles everything.
+Edit the cron expression in `.github/workflows/bounty-scout.yml`:
 
----
+```yaml
+schedule:
+  - cron: '0 */6 * * *'  # Every 6 hours
+```
 
-#### 💬 Option B: Telegram Channel/Chat Alerts
-The scout will send markdown alerts directly to your Telegram chat or channel.
+## Manual Trigger
 
-1. **Create a Bot:** Message `@BotFather` on Telegram, send `/newbot`, and copy the **API Token**.
-2. **Get your Chat ID:** Send a message to your new bot, then open `https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates` in your browser. Look for `"chat":{"id":123456789}`. Copy that numeric ID.
-3. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `TELEGRAM_BOT_TOKEN` with your bot's token.
-   - Create a repository secret named `TELEGRAM_CHAT_ID` with your numeric chat ID.
+You can also manually trigger a scan from the Actions tab in your repository.
 
----
+## Output
 
-#### 🎮 Option C: Discord Channel Alerts
-The scout will push formatted alerts directly to a channel in your Discord server.
+Each scan creates a new issue with:
+- Scan timestamp
+- List of new bounty opportunities with links
+- Repository names and comment counts
+- Last update timestamps
 
-1. **Create Webhook:** Go to your Discord server, click channel settings (gear icon) > **Integrations** > **Webhooks** > **Create Webhook**. Copy the Webhook URL.
-2. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `DISCORD_WEBHOOK_URL` with your webhook URL.
+## License
 
----
-
-## 🧪 Triggering Manually
-You can test the setup immediately without waiting for the next hour:
-1. Go to your repository on GitHub.
-2. Click on the **Actions** tab.
-3. Select **Scout Active Bounties Hourly** from the sidebar.
-4. Click the **Run workflow** dropdown and select **Run workflow**.
-
-Happy bounty hunting! 🚀
+MIT
