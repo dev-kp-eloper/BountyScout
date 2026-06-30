@@ -1,42 +1,33 @@
-name: Scout Active Bounties Hourly
+name: Bounty Scout
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at minute 0 of every single hour, everyday
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI tab
+    - cron:  '0 * * * *'
 
 jobs:
-  scout:
+  scan:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed to commit and persist seen_bounties.json state file
-      issues: write   # Needed if you choose Option A (Native GitHub Issue alerts)
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install requests
 
       - name: Run Bounty Scout
-        env:
-          # Required for GitHub API search and native issue notification
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # Optional: Configure Telegram notification secrets
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          
-          # Optional: Configure Discord notification secrets
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: python scout_bounties.py
+        run: |
+          python scout_bounties.py
 
-      - name: Commit & Push Updated Seen Bounties State
+      - name: Commit and push seen bounties
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add seen_bounties.json || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update seen bounties state [skip ci]" && git push)
+          git add seen_bounties.json
+          git diff --quiet HEAD || git commit -m "Update seen bounties"
+          git push origin main
