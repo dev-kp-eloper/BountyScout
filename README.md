@@ -81,3 +81,5 @@ Edit `BLOCKLIST`, `TITLE_BLOCKLIST`, `LABEL_BLOCKLIST`, and `REPO_BLOCKLIST` in 
 ### Disable GitHub Issue alerts
 
 If hourly issue creation is too noisy, keep Telegram/Discord and set `BOUNTYSCOUT_GITHUB_ISSUES=0` in `.github/workflows/bounty-scout.yml`.
+
+<!-- Rebased on upstream main -->
