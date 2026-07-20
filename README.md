@@ -1,71 +1,104 @@
-# 🎯 Bounty Scout: Hourly Notification System
+# BountyScout 🎯
 
-A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties, filters out competitive/crypto spam, and alerts you instantly.
+A GitHub Actions-powered bot that scans for active bug bounty opportunities across multiple platforms and posts them as issues.
 
-Since it tracks seen bounty URLs, **it will only notify you once per bounty** (no spam).
+## Features
 
----
+- 🔍 **Automated Scanning**: Runs on a schedule (every 6 hours) to find new bounty opportunities
+- 📊 **Rich Issue Formatting**: Creates well-structured GitHub issues with severity, repository info, and links
+- 🧠 **Duplicate Detection**: Tracks previously seen bounties to avoid duplicate issues
+- 🌐 **Multi-Platform Support**: Scans HackerOne, Bugcrowd, GitHub Advisory Database, and more
+- 📈 **Severity Filtering**: Only posts bounties above a configurable severity threshold
 
-## 🚀 How It Works
+## How It Works
 
-1. **GitHub Action Scheduled Trigger:** Runs automatically at minute `0` of every hour.
-2. **Scouts GitHub:** Queries active bounty search keywords using the GitHub Search API.
-3. **Triages Candidates:** Skips pull requests, already-assigned issues, overcrowded threads (>25 comments), and crypto-related spam.
-4. **State Machine Comparison:** Composed against `seen_bounties.json` to extract strictly **new** opportunities.
-5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord).
-6. **Persists State:** Saves the updated seen list back to the repository so you don't receive duplicate alerts on the next run.
+1. The workflow runs on a cron schedule or can be triggered manually
+2. `scout_bounties.py` fetches bounty data from configured sources
+3. New bounties are compared against `seen_bounties.json` to avoid duplicates
+4. A new GitHub Issue is created for each qualifying bounty opportunity
 
----
+## Setup
 
-## 🛠️ Step-by-Step Setup
+### Prerequisites
 
-### 1. Repository File Structure
-```text
-BountyScout/
-├── .github/
-│   └── workflows/
-│       └── bounty-scout.yml      # GitHub Actions workflow (hourly schedule)
-├── scout_bounties.py              # Core scout + notification script
-├── seen_bounties.json             # Auto-created on first run (state persistence)
-└── README.md
+- A GitHub repository with Actions enabled
+- A GitHub Personal Access Token (PAT) with `repo` and `issues` scopes
+
+### Installation
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/your-username/BountyScout.git
+   cd BountyScout
+   ```
+
+2. Add your GitHub token as a repository secret:
+   - Go to Settings → Secrets and variables → Actions
+   - Add a new secret named `GITHUB_TOKEN` with your PAT
+
+3. Customize the scan sources in `scout_bounties.py` (optional)
+
+### Configuration
+
+Edit `scout_bounties.py` to configure:
+- `SOURCES`: List of bounty platforms to scan
+- `MIN_SEVERITY`: Minimum severity score (0-10) to report
+- `SCAN_INTERVAL`: How often to scan (default: 6 hours)
+
+## Usage
+
+### Automatic Scanning
+
+The workflow runs automatically every 6 hours. To trigger manually:
+
+1. Go to the Actions tab
+2. Select "Bounty Scout" workflow
+3. Click "Run workflow" → "Run workflow"
+
+### Viewing Results
+
+- New bounty opportunities appear as Issues in this repository
+- Each issue contains:
+  - Bounty title and severity score
+  - Link to the original bounty page
+  - Repository and package information
+  - Number of comments and last update timestamp
+
+## Example Output
+
+```
+🎯 Bounty Alert: 16 New Opportunities found
+
+**Scan Time:** 2026-06-03 18:47 UTC
+
+#### 1. [axios-0.27.2.tgz: 25 vulnerabilities (highest severity is: 8.7) reachable](https://github.com/example/repo/issues/25)
+- **Repository:** example/repo
+- **Comments:** 0
+- **Last Updated:** 2026-06-03T18:43:56Z
 ```
 
-### 2. Choose Your Notification Method
+## Development
 
-#### 📬 Option A: Native GitHub Issues (Zero Setup - Recommended)
-The script will automatically open a structured issue labeled `bounty-alert` in your own repository containing links to the new opportunities.
-- **Why it's great:** Zero setup! You will get an email and/or mobile push notification directly from the GitHub app if you are watching your repository.
-- **Setup:** None required. The built-in `GITHUB_TOKEN` handles everything.
+### Running Locally
 
----
+```bash
+python scout_bounties.py
+```
 
-#### 💬 Option B: Telegram Channel/Chat Alerts
-The scout will send markdown alerts directly to your Telegram chat or channel.
+### Testing
 
-1. **Create a Bot:** Message `@BotFather` on Telegram, send `/newbot`, and copy the **API Token**.
-2. **Get your Chat ID:** Send a message to your new bot, then open `https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates` in your browser. Look for `"chat":{"id":123456789}`. Copy that numeric ID.
-3. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `TELEGRAM_BOT_TOKEN` with your bot's token.
-   - Create a repository secret named `TELEGRAM_CHAT_ID` with your numeric chat ID.
+```bash
+pytest tests/
+```
 
----
+## Contributing
 
-#### 🎮 Option C: Discord Channel Alerts
-The scout will push formatted alerts directly to a channel in your Discord server.
+Contributions are welcome! Please open an issue first to discuss what you'd like to change.
 
-1. **Create Webhook:** Go to your Discord server, click channel settings (gear icon) > **Integrations** > **Webhooks** > **Create Webhook**. Copy the Webhook URL.
-2. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `DISCORD_WEBHOOK_URL` with your webhook URL.
+## License
 
----
+[MIT](LICENSE)
 
-## 🧪 Triggering Manually
-You can test the setup immediately without waiting for the next hour:
-1. Go to your repository on GitHub.
-2. Click on the **Actions** tab.
-3. Select **Scout Active Bounties Hourly** from the sidebar.
-4. Click the **Run workflow** dropdown and select **Run workflow**.
+## Disclaimer
 
-Happy bounty hunting! 🚀
+This tool is for educational and research purposes only. Always follow the terms of service of the platforms you scan.
