@@ -84,6 +84,138 @@ def is_clean_candidate(item):
 def send_telegram_notification(token, chat_id, message):
     """Send a notification message via Telegram Bot API."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
+    }).encode("utf-8")
+    
+    req = urllib.request.Request(url, data=data)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Telegram API Error: {e}")
+        return {}
+
+def send_discord_notification(webhook_url, message):
+    """Send a notification message via Discord Webhook."""
+    data = json.dumps({"content": message}).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+    
+    req = urllib.request.Request(webhook_url, data=data, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return response.read()
+    except Exception as e:
+        print(f"Discord Webhook Error: {e}")
+        return None
+
+def create_github_issue(token, repo, title, body):
+    """Create a new GitHub issue in the repository."""
+    url = f"https://api.github.com/repos/{repo}/issues"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    data = json.dumps({
+        "title": title,
+        "body": body,
+        "labels": ["bounty-alert"]
+    }).encode("utf-8")
+    
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"GitHub Issue Creation Error: {e}")
+        return {}
+
+def format_bounty_message(bounties):
+    """Format bounty list into a readable markdown message."""
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    message = f"### Active Bounty Scan Results\n\n**Scan Time:** {timestamp}\n\n"
+    
+    for idx, item in enumerate(bounties, 1):
+        title = item.get("title", "Untitled")
+        url = item.get("html_url", "")
+        repo = item.get("repository_url", "").replace("https://api.github.com/repos/", "")
+        comments = item.get("comments", 0)
+        updated = item.get("updated_at", "")
+        
+        message += f"#### {idx}. [{title}]({url})\n"
+        message += f"- **Repository:** [{repo}](https://github.com/{repo})\n"
+        message += f"- **Comments:** {comments}\n"
+        message += f"- **Last Updated:** {updated}\n\n"
+    
+    return message
+
+def main():
+    """Main execution logic."""
+    seen_urls = load_seen_bounties()
+    all_candidates = []
+    
+    # Fetch GitHub token from environment (if available)
+    github_token = os.getenv("GITHUB_TOKEN")
+    
+    # Search GitHub for bounty opportunities
+    for query in SEARCH_QUERIES:
+        results = search_github(query, github_token)
+        items = results.get("items", [])
+        
+        for item in items:
+            # Apply triage filters
+            if not is_clean_candidate(item):
+                continue
+                
+            url = item.get("html_url")
+            if url and url not in seen_urls:
+                all_candidates.append(item)
+                seen_urls.add(url)
+    
+    # Remove duplicates (same issue found via multiple queries)
+    unique_bounties = {item.get("html_url"): item for item in all_candidates}.values()
+    new_bounties = list(unique_bounties)
+    
+    if not new_bounties:
+        print("No new bounties found in this scan.")
+        save_seen_bounties(seen_urls)
+        return
+    
+    # Format notification message
+    count = len(new_bounties)
+    title = f"🎯 Bounty Alert: {count} New Opportunities Found"
+    body = format_bounty_message(new_bounties)
+    
+    print(f"Found {count} new bounty opportunities!")
+    
+    # Send notifications based on available credentials
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    telegram_chat = os.getenv("TELEGRAM_CHAT_ID")
+    discord_webhook = os.getenv("DISCORD_WEBHOOK_URL")
+    github_repo = os.getenv("GITHUB_REPOSITORY")
+    
+    if telegram_token and telegram_chat:
+        send_telegram_notification(telegram_token, telegram_chat, body)
+        print("Telegram notification sent.")
+    
+    if discord_webhook:
+        send_discord_notification(discord_webhook, body)
+        print("Discord notification sent.")
+    
+    if github_token and github_repo:
+        create_github_issue(github_token, github_repo, title, body)
+        print("GitHub issue created.")
+    
+    # Persist state
+    save_seen_bounties(seen_urls)
+    print("State saved successfully.")
+
+if __name__ == "__main__":
+    main()oken}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": message,
