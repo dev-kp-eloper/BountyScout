@@ -69,3 +69,15 @@ You can test the setup immediately without waiting for the next hour:
 4. Click the **Run workflow** dropdown and select **Run workflow**.
 
 Happy bounty hunting! 🚀
+
+---
+
+## Spam Filters
+
+Issues are dropped if they contain blocklisted keywords, match meta-notification title patterns (`Bounty Alert`, `New Opportunit…`), carry labels like `bounty-alert` / `honeypot-task`, or come from known farming repos (including other `*/bountyscout` forks and `zhangjiayang6835-cyber/ai-research`).
+
+Edit `BLOCKLIST`, `TITLE_BLOCKLIST`, `LABEL_BLOCKLIST`, and `REPO_BLOCKLIST` in `scout_bounties.py` to tune.
+
+### Disable GitHub Issue alerts
+
+If hourly issue creation is too noisy, keep Telegram/Discord and set `BOUNTYSCOUT_GITHUB_ISSUES=0` in `.github/workflows/bounty-scout.yml`.
