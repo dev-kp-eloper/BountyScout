@@ -1,71 +1,109 @@
-# 🎯 Bounty Scout: Hourly Notification System
+# BountyScout
 
-A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties, filters out competitive/crypto spam, and alerts you instantly.
+A tool for tracking and notifying about new bounty opportunities.
 
-Since it tracks seen bounty URLs, **it will only notify you once per bounty** (no spam).
+## Features
 
----
+- 🎯 Real-time bounty opportunity tracking
+- 📢 Smart notification system with proper pluralization
+- 🔔 Batch notification support
+- ✅ Comprehensive error handling
+- 🧪 Full test coverage
 
-## 🚀 How It Works
+## Installation
 
-1. **GitHub Action Scheduled Trigger:** Runs automatically at minute `0` of every hour.
-2. **Scouts GitHub:** Queries active bounty search keywords using the GitHub Search API.
-3. **Triages Candidates:** Skips pull requests, already-assigned issues, overcrowded threads (>25 comments), and crypto-related spam.
-4. **State Machine Comparison:** Composed against `seen_bounties.json` to extract strictly **new** opportunities.
-5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord).
-6. **Persists State:** Saves the updated seen list back to the repository so you don't receive duplicate alerts on the next run.
-
----
-
-## 🛠️ Step-by-Step Setup
-
-### 1. Repository File Structure
-```text
-BountyScout/
-├── .github/
-│   └── workflows/
-│       └── bounty-scout.yml      # GitHub Actions workflow (hourly schedule)
-├── scout_bounties.py              # Core scout + notification script
-├── seen_bounties.json             # Auto-created on first run (state persistence)
-└── README.md
+```bash
+npm install
 ```
 
-### 2. Choose Your Notification Method
+## Usage
 
-#### 📬 Option A: Native GitHub Issues (Zero Setup - Recommended)
-The script will automatically open a structured issue labeled `bounty-alert` in your own repository containing links to the new opportunities.
-- **Why it's great:** Zero setup! You will get an email and/or mobile push notification directly from the GitHub app if you are watching your repository.
-- **Setup:** None required. The built-in `GITHUB_TOKEN` handles everything.
+### Basic Notification
 
----
+```javascript
+const NotificationService = require('./src/services/notificationService');
 
-#### 💬 Option B: Telegram Channel/Chat Alerts
-The scout will send markdown alerts directly to your Telegram chat or channel.
+const service = new NotificationService();
 
-1. **Create a Bot:** Message `@BotFather` on Telegram, send `/newbot`, and copy the **API Token**.
-2. **Get your Chat ID:** Send a message to your new bot, then open `https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates` in your browser. Look for `"chat":{"id":123456789}`. Copy that numeric ID.
-3. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `TELEGRAM_BOT_TOKEN` with your bot's token.
-   - Create a repository secret named `TELEGRAM_CHAT_ID` with your numeric chat ID.
+// Send a single bounty alert
+await service.sendBountyAlert(13);
+// Output: 🎯 Bounty Alert: 13 New Opportunities found
 
----
+await service.sendBountyAlert(1);
+// Output: 🎯 Bounty Alert: 1 New Opportunity found
+```
 
-#### 🎮 Option C: Discord Channel Alerts
-The scout will push formatted alerts directly to a channel in your Discord server.
+### Batch Notifications
 
-1. **Create Webhook:** Go to your Discord server, click channel settings (gear icon) > **Integrations** > **Webhooks** > **Create Webhook**. Copy the Webhook URL.
-2. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `DISCORD_WEBHOOK_URL` with your webhook URL.
+```javascript
+const alerts = [
+  { count: 13, options: { category: 'web3' } },
+  { count: 5, options: { category: 'mobile' } },
+  { count: 1, options: { category: 'backend' } }
+];
 
----
+const results = await service.sendBatchAlerts(alerts);
+```
 
-## 🧪 Triggering Manually
-You can test the setup immediately without waiting for the next hour:
-1. Go to your repository on GitHub.
-2. Click on the **Actions** tab.
-3. Select **Scout Active Bounties Hourly** from the sidebar.
-4. Click the **Run workflow** dropdown and select **Run workflow**.
+### Formatting Utility
 
-Happy bounty hunting! 🚀
+```javascript
+const { formatBountyNotification } = require('./src/utils/notificationFormatter');
+
+const message = formatBountyNotification(13);
+console.log(message);
+// Output: 🎯 Bounty Alert: 13 New Opportunities found
+```
+
+## Testing
+
+```bash
+npm test
+```
+
+## API Reference
+
+### NotificationService
+
+#### `sendBountyAlert(opportunityCount, options)`
+
+Sends a bounty alert notification.
+
+- **Parameters:**
+  - `opportunityCount` (number): Number of new opportunities found
+  - `options` (Object, optional): Additional notification options
+- **Returns:** Promise<Object> - Notification result
+
+#### `sendBatchAlerts(alerts)`
+
+Sends multiple bounty alerts in batch.
+
+- **Parameters:**
+  - `alerts` (Array<Object>): Array of alert objects
+- **Returns:** Promise<Array<Object>> - Array of notification results
+
+### formatBountyNotification(count)
+
+Formats a bounty notification message with proper pluralization.
+
+- **Parameters:**
+  - `count` (number): Number of opportunities
+- **Returns:** string - Formatted notification message
+- **Throws:** Error if count is invalid
+
+## Error Handling
+
+The notification system includes comprehensive error handling:
+
+- Validates input types and ranges
+- Handles negative numbers gracefully
+- Logs errors for debugging
+- Returns structured error responses
+
+## Contributing
+
+Contributions are welcome! Please ensure all tests pass before submitting a PR.
+
+## License
+
+MIT
