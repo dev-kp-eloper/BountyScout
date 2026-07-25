@@ -1,0 +1,25 @@
+{
+  "name": "bountyscout",
+  "version": "1.0.0",
+  "description": "Automated bug bounty opportunity finder",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "scout": "node src/index.js",
+    "create-issue": "node src/create-issue.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bug-bounty",
+    "security",
+    "automation"
+  ],
+  "author": "dev-kp-eloper",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
