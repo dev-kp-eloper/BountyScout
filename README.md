@@ -1,71 +1,105 @@
-# 🎯 Bounty Scout: Hourly Notification System
+# 🎯 BountyScout
 
-A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties, filters out competitive/crypto spam, and alerts you instantly.
+Automated GitHub bounty opportunity finder that scans for open bounty issues across GitHub and notifies you of new opportunities.
 
-Since it tracks seen bounty URLs, **it will only notify you once per bounty** (no spam).
+## Features
 
----
+- 🔍 Automatically searches for bounty-related issues across GitHub
+- 💰 Extracts bounty amounts from issue descriptions
+- 📊 Tracks bounties in a structured JSON format
+- 🔔 Creates GitHub issues to notify about new bounties
+- ⏰ Runs on a schedule via GitHub Actions
+- 🚀 Zero configuration required
 
-## 🚀 How It Works
+## How It Works
 
-1. **GitHub Action Scheduled Trigger:** Runs automatically at minute `0` of every hour.
-2. **Scouts GitHub:** Queries active bounty search keywords using the GitHub Search API.
-3. **Triages Candidates:** Skips pull requests, already-assigned issues, overcrowded threads (>25 comments), and crypto-related spam.
-4. **State Machine Comparison:** Composed against `seen_bounties.json` to extract strictly **new** opportunities.
-5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord).
-6. **Persists State:** Saves the updated seen list back to the repository so you don't receive duplicate alerts on the next run.
+BountyScout searches GitHub for issues with:
+- Bounty-related labels (bounty, bug-bounty, reward, etc.)
+- Keywords in titles/descriptions ($, bounty, reward, prize)
+- References to bounty platforms (Gitcoin, Bountysource, IssueHunt)
 
----
+When new bounties are found, it:
+1. Saves them to `data/bounties.json`
+2. Creates a GitHub issue with a summary of new opportunities
+3. Tracks the last run to avoid duplicates
 
-## 🛠️ Step-by-Step Setup
+## Setup
 
-### 1. Repository File Structure
-```text
-BountyScout/
-├── .github/
-│   └── workflows/
-│       └── bounty-scout.yml      # GitHub Actions workflow (hourly schedule)
-├── scout_bounties.py              # Core scout + notification script
-├── seen_bounties.json             # Auto-created on first run (state persistence)
-└── README.md
+1. Fork this repository
+2. Enable GitHub Actions in your fork
+3. The workflow will run automatically every 6 hours
+4. Check the Issues tab for bounty alerts!
+
+### Manual Run
+
+You can also trigger the workflow manually:
+1. Go to the "Actions" tab
+2. Select "Bounty Scout" workflow
+3. Click "Run workflow"
+
+## Data Structure
+
+Bounties are stored in `data/bounties.json` with the following structure:
+
+```json
+{
+  "bounties": [
+    {
+      "id": 123456789,
+      "title": "Fix bug - $500 bounty",
+      "url": "https://github.com/owner/repo/issues/123",
+      "repository": "owner/repo",
+      "author": "username",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z",
+      "state": "open",
+      "labels": ["bounty", "bug"],
+      "amount": "$500",
+      "body": "Issue description...",
+      "comments": 5
+    }
+  ],
+  "lastUpdated": "2024-01-01T00:00:00Z",
+  "totalCount": 100,
+  "newCount": 5
+}
 ```
 
-### 2. Choose Your Notification Method
+## Local Development
 
-#### 📬 Option A: Native GitHub Issues (Zero Setup - Recommended)
-The script will automatically open a structured issue labeled `bounty-alert` in your own repository containing links to the new opportunities.
-- **Why it's great:** Zero setup! You will get an email and/or mobile push notification directly from the GitHub app if you are watching your repository.
-- **Setup:** None required. The built-in `GITHUB_TOKEN` handles everything.
+```bash
+# Install dependencies
+npm install
 
----
+# Set GitHub token
+export GITHUB_TOKEN=your_github_token
 
-#### 💬 Option B: Telegram Channel/Chat Alerts
-The scout will send markdown alerts directly to your Telegram chat or channel.
+# Run the scout
+npm start
+```
 
-1. **Create a Bot:** Message `@BotFather` on Telegram, send `/newbot`, and copy the **API Token**.
-2. **Get your Chat ID:** Send a message to your new bot, then open `https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates` in your browser. Look for `"chat":{"id":123456789}`. Copy that numeric ID.
-3. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `TELEGRAM_BOT_TOKEN` with your bot's token.
-   - Create a repository secret named `TELEGRAM_CHAT_ID` with your numeric chat ID.
+## Configuration
 
----
+The workflow runs every 6 hours by default. To change the schedule, edit `.github/workflows/bounty-scout.yml`:
 
-#### 🎮 Option C: Discord Channel Alerts
-The scout will push formatted alerts directly to a channel in your Discord server.
+```yaml
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Change this line
+```
 
-1. **Create Webhook:** Go to your Discord server, click channel settings (gear icon) > **Integrations** > **Webhooks** > **Create Webhook**. Copy the Webhook URL.
-2. **Add Secrets to GitHub:**
-   - Go to your repository **Settings** > **Secrets and variables** > **Actions**.
-   - Create a repository secret named `DISCORD_WEBHOOK_URL` with your webhook URL.
+## Contributing
 
----
+Contributions are welcome! Feel free to:
+- Add new bounty platforms to search
+- Improve bounty amount extraction
+- Add filtering options
+- Enhance the notification format
 
-## 🧪 Triggering Manually
-You can test the setup immediately without waiting for the next hour:
-1. Go to your repository on GitHub.
-2. Click on the **Actions** tab.
-3. Select **Scout Active Bounties Hourly** from the sidebar.
-4. Click the **Run workflow** dropdown and select **Run workflow**.
+## License
 
-Happy bounty hunting! 🚀
+MIT License - feel free to use this project however you'd like!
+
+## Disclaimer
+
+This tool is for informational purposes only. Always verify bounty details and legitimacy before working on any issue. The maintainers are not responsible for any disputes or issues arising from bounty opportunities found by this tool.

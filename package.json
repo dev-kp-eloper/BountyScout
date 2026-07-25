@@ -1,0 +1,24 @@
+{
+  "name": "bountyscout",
+  "version": "1.0.0",
+  "description": "Automated bounty opportunity finder for GitHub issues",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": [
+    "bounty",
+    "github",
+    "automation",
+    "scout"
+  ],
+  "author": "dev-kp-eloper",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^19.0.11"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
