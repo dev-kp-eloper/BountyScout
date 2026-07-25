@@ -1,0 +1,215 @@
+const { Octokit } = require('@octokit/rest');
+const fs = require('fs').promises;
+const path = require('path');
+
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN
+});
+
+const BOUNTY_KEYWORDS = [
+  'bounty',
+  'reward',
+  'prize',
+  'hackathon',
+  'bug bounty',
+  'security bounty',
+  'good first issue',
+  'help wanted'
+];
+
+const BOUNTY_LABELS = [
+  'bounty',
+  'bug-bounty',
+  'reward',
+  'prize',
+  'hackathon',
+  'good first issue',
+  'help wanted',
+  'up-for-grabs'
+];
+
+const DATA_FILE = path.join(__dirname, '../data/bounties.json');
+const ISSUE_TITLE_TYPO = 'Opportunityies';
+const ISSUE_TITLE_CORRECT = 'Opportunities';
+
+async function searchBounties() {
+  const allBounties = [];
+  const seenUrls = new Set();
+
+  try {
+    // Search by labels
+    for (const label of BOUNTY_LABELS) {
+      try {
+        const { data } = await octokit.search.issuesAndPullRequests({
+          q: `label:"${label}" is:issue is:open`,
+          sort: 'created',
+          order: 'desc',
+          per_page: 30
+        });
+
+        for (const issue of data.items) {
+          if (!seenUrls.has(issue.html_url)) {
+            seenUrls.add(issue.html_url);
+            allBounties.push({
+              title: issue.title,
+              url: issue.html_url,
+              repository: issue.repository_url.replace('https://api.github.com/repos/', ''),
+              labels: issue.labels.map(l => l.name),
+              createdAt: issue.created_at,
+              updatedAt: issue.updated_at,
+              state: issue.state,
+              body: issue.body ? issue.body.substring(0, 500) : ''
+            });
+          }
+        }
+
+        // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error(`Error searching for label "${label}":`, error.message);
+      }
+    }
+
+    // Search by keywords in title/body
+    for (const keyword of BOUNTY_KEYWORDS) {
+      try {
+        const { data } = await octokit.search.issuesAndPullRequests({
+          q: `"${keyword}" in:title,body is:issue is:open`,
+          sort: 'created',
+          order: 'desc',
+          per_page: 20
+        });
+
+        for (const issue of data.items) {
+          if (!seenUrls.has(issue.html_url)) {
+            seenUrls.add(issue.html_url);
+            allBounties.push({
+              title: issue.title,
+              url: issue.html_url,
+              repository: issue.repository_url.replace('https://api.github.com/repos/', ''),
+              labels: issue.labels.map(l => l.name),
+              createdAt: issue.created_at,
+              updatedAt: issue.updated_at,
+              state: issue.state,
+              body: issue.body ? issue.body.substring(0, 500) : ''
+            });
+          }
+        }
+
+        // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error(`Error searching for keyword "${keyword}":`, error.message);
+      }
+    }
+
+    return allBounties;
+  } catch (error) {
+    console.error('Error in searchBounties:', error);
+    throw error;
+  }
+}
+
+async function loadPreviousBounties() {
+  try {
+    const data = await fs.readFile(DATA_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function saveBounties(bounties) {
+  const dataDir = path.dirname(DATA_FILE);
+  await fs.mkdir(dataDir, { recursive: true });
+  await fs.writeFile(DATA_FILE, JSON.stringify(bounties, null, 2));
+}
+
+async function createIssueNotification(newBounties) {
+  if (newBounties.length === 0) {
+    console.log('No new bounties found.');
+    return;
+  }
+
+  const [owner, repo] = process.env.GITHUB_REPOSITORY?.split('/') || ['dev-kp-eloper', 'BountyScout'];
+
+  // Fix the typo in the title
+  const title = `🎯 Bounty Alert: ${newBounties.length} New ${ISSUE_TITLE_CORRECT} Found`;
+  
+  let body = `## 🎉 New Bounty ${ISSUE_TITLE_CORRECT} Discovered!\n\n`;
+  body += `Found **${newBounties.length}** new bounty ${newBounties.length === 1 ? 'opportunity' : 'opportunities'}!\n\n`;
+  body += `---\n\n`;
+
+  for (const bounty of newBounties.slice(0, 19)) {
+    body += `### [${bounty.title}](${bounty.url})\n\n`;
+    body += `**Repository:** ${bounty.repository}\n`;
+    body += `**Labels:** ${bounty.labels.join(', ') || 'None'}\n`;
+    body += `**Created:** ${new Date(bounty.createdAt).toLocaleDateString()}\n\n`;
+    
+    if (bounty.body) {
+      const preview = bounty.body.substring(0, 200).replace(/\n/g, ' ');
+      body += `**Preview:** ${preview}${bounty.body.length > 200 ? '...' : ''}\n\n`;
+    }
+    
+    body += `---\n\n`;
+  }
+
+  if (newBounties.length > 19) {
+    body += `\n*... and ${newBounties.length - 19} more!*\n\n`;
+  }
+
+  body += `\n\n*Last updated: ${new Date().toISOString()}*\n`;
+  body += `\n*This issue was automatically generated by Bounty Scout 🤖*`;
+
+  try {
+    await octokit.issues.create({
+      owner,
+      repo,
+      title,
+      body,
+      labels: ['bounty-alert', 'automated']
+    });
+    console.log(`Created issue: ${title}`);
+  } catch (error) {
+    console.error('Error creating issue:', error.message);
+  }
+}
+
+async function main() {
+  try {
+    console.log('Starting Bounty Scout...');
+    
+    const currentBounties = await searchBounties();
+    console.log(`Found ${currentBounties.length} total bounties`);
+    
+    const previousBounties = await loadPreviousBounties();
+    console.log(`Previously tracked ${previousBounties.length} bounties`);
+    
+    const previousUrls = new Set(previousBounties.map(b => b.url));
+    const newBounties = currentBounties.filter(b => !previousUrls.has(b.url));
+    
+    console.log(`Identified ${newBounties.length} new bounties`);
+    
+    if (newBounties.length > 0) {
+      await createIssueNotification(newBounties);
+      await saveBounties(currentBounties);
+      console.log('Bounty data saved successfully');
+    } else {
+      console.log('No new bounties to report');
+    }
+    
+    console.log('Bounty Scout completed successfully!');
+  } catch (error) {
+    console.error('Error in main:', error);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = { searchBounties, loadPreviousBounties, saveBounties, createIssueNotification };
