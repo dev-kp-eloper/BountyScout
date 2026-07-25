@@ -1,0 +1,25 @@
+{
+  "name": "bounty-scout",
+  "version": "1.0.0",
+  "description": "Automated bounty opportunity finder",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "bounty",
+    "scout",
+    "opportunities"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^19.0.11",
+    "axios": "^1.4.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
+  }
+}
