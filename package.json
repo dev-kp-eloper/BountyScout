@@ -1,0 +1,29 @@
+{
+  "name": "bountyscout",
+  "version": "1.0.0",
+  "description": "A tool for tracking and notifying about new bounty opportunities",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "bounty",
+    "scout",
+    "notifications",
+    "opportunities"
+  ],
+  "author": "dev-kp-eloper",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ]
+  }
+}
