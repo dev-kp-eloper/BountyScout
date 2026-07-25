@@ -1,0 +1,29 @@
+{
+  "name": "bountyscout",
+  "version": "1.0.0",
+  "description": "Automated bug bounty opportunity finder",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "scout": "node src/index.js",
+    "create-issue": "node src/create-issue.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bug-bounty",
+    "security",
+    "automation",
+    "scraper"
+  ],
+  "author": "dev-kp-eloper",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^19.0.11",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
