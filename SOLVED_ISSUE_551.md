@@ -1,0 +1,132 @@
+# Fix for Issue #551: 🎯 Bounty Alert: 6 New Opportunityies found
+
+## Solution & Analysis
+```diff
+--- /dev/null
++++ b/src/bounty_scanner/parser.py
+@@ -0,0 +1,52 @@
++"""Bounty scanner notification parser and issue validator."""
++
++import re
++from typing import Dict, Any, Optional
++
++
++class BountyAlertParser:
++    """Parses and validates incoming bounty scan notification alerts."""
+
++    TITLE_PATTERN = re.compile(
++        r"^🎯\s*Bounty Alert:\s*(\d+)\s*New Opportunity(?:ies|ies\s+found|s\s+found)?",
++        re.IGNORECASE,
++    )
+
++    ITEM_PATTERN = re.compile(
++        r"####\s*\d+\.\s*\[\[BOUNTY\]\s*\[READY FOR AGENT\]\s*\[(.*?)\]\s*(.*?)\]\((https?://github\.com/([^\s/]+)/([^\s/]+)/issues/(\d+))\)"
++    )
+
++    @classmethod
++    def is_scan_alert(cls, title: str) -> bool:
++        """Check if the given issue title matches a meta bounty scan alert."""
++        if not title:
++            return False
++        return bool(cls.TITLE_PATTERN.search(title.strip()))
+
++    @classmethod
++    def parse_scan_body(cls, body: str) -> Dict[str, Any]:
++        """Extract metadata and nested bounty links from a bounty alert payload body."""
++        if not body:
++            return {"valid": False, "count": 0, "opportunities": []}
+
++        opportunities = []
++        for match in cls.ITEM_PATTERN.finditer(body):
++            reward_str, name, url, owner, repo, issue_num = match.groups()
++            opportunities.append(
++                {
++                    "title": name.strip(),
++                    "reward": reward_str.strip(),
++                    "url": url.strip(),
++                    "owner": owner,
++                    "repo": repo,
++                    "issue_number": int(issue_num),
++                }
++            )
+
++        return {
++            "valid": True,
++            "count": len(opportunities),
++            "opportunities": opportunities,
++        }
++
++    @classmethod
++    def handle_incoming_issue(cls, issue_data: Dict[str, Any]) -> Dict[str, Any]:
++        """Process incoming issue payload and mark aggregated meta-scans as non-actionable."""
++        title = issue_data.get("title", "")
++        body = issue_data.get("body", "")
++
++        if cls.is_scan_alert(title):
++            parsed = cls.parse_scan_body(body)
++            return {
++                "action": "close",
++                "reason": "invalid_meta_scan",
++                "parsed_opportunities": parsed.get("opportunities", []),
++                "comment": (
++                    "Closed automatically: This issue is an aggregated bounty scan alert "
++                    "and does not contain actionable source code or bug reproduction steps."
++                ),
++            }
++
++        return {"action": "process", "reason": "actionable_issue"}
+--- /dev/null
++++ b/tests/test_bounty_scanner.py
+@@ -0,0 +1,55 @@
++"""Tests for the Bounty Alert parser and incoming issue validator."""
+
++import pytest
++from bounty_scanner.parser import BountyAlertParser
++
++
++def test_is_scan_alert_positive():
++    title = "🎯 Bounty Alert: 6 New Opportunityies found"
++    assert BountyAlertParser.is_scan_alert(title) is True
++
++
++def test_is_scan_alert_negative():
++    title = "Fix typo in login screen handler"
++    assert BountyAlertParser.is_scan_alert(title) is False
++
++
++def test_parse_scan_body():
++    body = (
++        "### Active Bounty Scan Results\n\n"
++        "**Scan Time:** 2026-07-21 03:34 UTC\n\n"
++        "#### 1. [[BOUNTY] [READY FOR AGENT] [100-300$USD Opire] Design a new antagonist]"
++        "(https://github.com/Iamgoofball/-tg-station/issues/47)\n"
++        "- **Repository:** [Iamgoofball/-tg-station](https://github.com/Iamgoofball/-tg-station)\n"
++    )
++    result = BountyAlertParser.parse_scan_body(body)
++    assert result["valid"] is True
++    assert result["count"] == 1
++    assert result["opportunities"][0]["owner"] == "Iamgoofball"
++    assert result["opportunities"][0]["repo"] == "-tg-station"
++    assert result["opportunities"][0]["issue_number"] == 47
++
++
++def test_handle_incoming_issue_scan_alert():
++    issue = {
++        "title": "🎯 Bounty Alert: 6 New Opportunityies found",
++        "body": "#### 1. [[BOUNTY] [READY FOR AGENT] [100$USD] Test Issue](https://github.com/owner/repo/issues/1)",
++    }
++    action = BountyAlertParser.handle_incoming_issue(issue)
++    assert action["action"] == "close"
++    assert action["reason"] == "invalid_meta_scan"
++    assert len(action["parsed_opportunities"]) == 1
++
++
++def test_handle_incoming_issue_standard():
++    issue = {
++        "title": "Fix null pointer exception on user logout",
++        "body": "Steps to reproduce...",
++    }
++    action = BountyAlertParser.handle_incoming_issue(issue)
++    assert action["action"] == "process"
++    assert action["reason"] == "actionable_issue"
+```
