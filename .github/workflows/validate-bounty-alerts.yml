@@ -1,0 +1,60 @@
+name: Validate Bounty Alerts
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  audit-bounty-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Audit and close recursive bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repoFullName = context.payload.repository.full_name;
+            
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            let closedCount = 0;
+            
+            for (const issue of issues.data) {
+              const title = issue.title;
+              const body = issue.body || '';
+              
+              if (title.includes('🎯 Bounty Alert:') && title.includes('New Opportunityies found')) {
+                const isSelfReferential = body.includes(`[${repoFullName}]`) || 
+                                          body.includes(`(https://github.com/${repoFullName}`) ||
+                                          body.includes(`github.com/${repoFullName}`);
+                
+                if (isSelfReferential) {
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    state: 'closed',
+                    state_reason: 'not_planned'
+                  });
+                  
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: '🤖 Auto-closed during audit: Self-referential bounty alert detected. These create recursive loops and should be filtered at the scanner level.'
+                  });
+                  
+                  closedCount++;
+                  console.log(`Closed self-referential issue #${issue.number}`);
+                }
+              }
+            }
+            
+            console.log(`Audit complete. Closed ${closedCount} self-referential bounty alerts.`);

@@ -1,0 +1,46 @@
+name: Close Self-Referential Bounty Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close-self-referential:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check and close self-referential bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title;
+            const body = issue.body || '';
+            
+            if (title.includes('🎯 Bounty Alert:') && title.includes('New Opportunityies found')) {
+              const repoFullName = context.payload.repository.full_name;
+              
+              const isSelfReferential = body.includes(`[${repoFullName}]`) || 
+                                        body.includes(`(https://github.com/${repoFullName}`) ||
+                                        body.includes(`github.com/${repoFullName}`);
+              
+              if (isSelfReferential) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'not_planned'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '🤖 Auto-closed: This bounty alert references itself, creating a recursive loop. The BountyScout scanner should exclude issues from its own repository to prevent self-referential alerts.'
+                });
+                
+                console.log(`Closed self-referential issue #${issue.number}`);
+              }
+            }
