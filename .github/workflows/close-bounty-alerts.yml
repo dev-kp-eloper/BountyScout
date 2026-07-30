@@ -1,0 +1,38 @@
+name: Close Recursive Bounty Alerts
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close-recursive-alerts:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close recursive bounty alert
+        if: contains(github.event.issue.title, '🎯 Bounty Alert') && contains(github.event.issue.title, 'New Opportunityies found')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const issue_body = context.payload.issue.body || '';
+            
+            const hasRecursiveReference = issue_body.includes('BountyScout/issues/');
+            
+            if (hasRecursiveReference) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                body: '🤖 This appears to be a recursive bounty alert (BountyScout scanning itself). Closing automatically to prevent infinite loops.'
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+            }

@@ -1,0 +1,51 @@
+name: Filter Bounty Sources
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-exclusions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create or update exclusion list
+        run: |
+          mkdir -p .github/config
+          cat > .github/config/bounty-exclusions.json << 'EOF'
+          {
+            "excluded_repositories": [
+              "freedom-winds/BountyScout",
+              "vansh-09/BountyScout"
+            ],
+            "excluded_patterns": [
+              ".*BountyScout.*",
+              ".*Bounty Alert.*Opportunityies.*"
+            ],
+            "excluded_issue_titles": [
+              "🎯 Bounty Alert: .* New Opportunityies found"
+            ]
+          }
+          EOF
+
+      - name: Create PR if changes exist
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore: update bounty source exclusions'
+          title: 'Update bounty source exclusions'
+          body: |
+            This PR adds exclusion filters to prevent recursive bounty scanning.
+            
+            Changes:
+            - Excludes BountyScout repositories from being scanned
+            - Filters out recursive bounty alert patterns
+            
+            This prevents issues like #612 where BountyScout scans itself.
+          branch: update-bounty-exclusions
+          delete-branch: true
