@@ -1,0 +1,31 @@
+name: Label Bounty Alerts
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Label bounty alert issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            
+            if (issue.title.includes('🎯 Bounty Alert:') || 
+                issue.title.includes('Bounty Alert:') ||
+                (issue.body && issue.body.includes('Active Bounty Scan Results'))) {
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['bounty-alert', 'automated']
+              });
+              
+              console.log(`Labeled issue #${issue.number} as bounty-alert`);
+            }
