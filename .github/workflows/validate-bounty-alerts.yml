@@ -1,0 +1,42 @@
+name: Validate Bounty Alerts
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.title, 'Bounty Alert')
+    
+    permissions:
+      issues: write
+    
+    steps:
+      - name: Validate bounty alert format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            
+            const hasTimestamp = /\*\*Scan Time:\*\*/.test(body);
+            const hasOpportunities = /####.*Opportunities/i.test(body) || /####.*\d+\./.test(body);
+            
+            if (!hasTimestamp || !hasOpportunities) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '⚠️ This bounty alert appears to be malformed. Expected format:\n\n- **Scan Time:** timestamp\n- List of opportunities\n\nPlease verify the scan completed successfully.'
+              });
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['needs-review']
+              });
+            } else {
+              console.log('Bounty alert format validated successfully');
+            }
