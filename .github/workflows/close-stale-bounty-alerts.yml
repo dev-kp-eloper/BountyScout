@@ -1,0 +1,41 @@
+name: Close Stale Bounty Alerts
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  close-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'bounty,automated',
+              state: 'open'
+            });
+            
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            
+            for (const issue of issues.data) {
+              const createdAt = new Date(issue.created_at);
+              if (createdAt < oneDayAgo) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: 'Automatically closing stale bounty alert. Bounty opportunities are time-sensitive and this alert is now outdated.'
+                });
+              }
+            }
