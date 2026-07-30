@@ -1,0 +1,29 @@
+name: Close Self-Referencing Bounty Alerts
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close-self-reference:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.title, 'Bounty Alert') && contains(github.event.issue.body, github.repository)
+    steps:
+      - name: Close self-referencing issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'not_planned'
+            });
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🤖 Auto-closed: This bounty alert references its own repository, creating a recursive loop. Bounty scanning should exclude self-references to prevent infinite issue creation.'
+            });

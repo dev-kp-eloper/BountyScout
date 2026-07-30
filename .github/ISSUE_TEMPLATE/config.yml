@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📋 Report a Bug
+    url: https://github.com/vansh-09/BountyScout/issues/new?template=bug_report.md
+    about: Report issues with BountyScout functionality
+  - name: 💡 Feature Request
+    url: https://github.com/vansh-09/BountyScout/issues/new?template=feature_request.md
+    about: Suggest improvements or new features
