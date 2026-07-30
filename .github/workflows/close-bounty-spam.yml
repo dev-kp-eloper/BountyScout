@@ -1,0 +1,53 @@
+name: Close Bounty Spam Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close-spam:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close bounty spam
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = issue.body || '';
+            
+            const spamPatterns = [
+              /bounty alert.*new opportunit/i,
+              /active bounty scan results/i,
+              /scan time:.*utc/i
+            ];
+            
+            const isSpam = spamPatterns.some(pattern => 
+              pattern.test(title) || pattern.test(body)
+            );
+            
+            if (isSpam) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: 'This issue has been automatically closed as it appears to be spam from an automated bounty scanner.'
+              });
+              
+              await github.rest.issues.lock({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                lock_reason: 'spam'
+              });
+            }
