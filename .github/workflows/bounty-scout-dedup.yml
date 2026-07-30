@@ -1,0 +1,76 @@
+name: Bounty Scout Deduplication
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 */6 * * *'
+
+jobs:
+  deduplicate:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Deduplicate bounty alert issues
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            console.log('Fetching open issues...');
+            const { data: allIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+              sort: 'created',
+              direction: 'desc'
+            });
+            
+            const bountyAlerts = allIssues.filter(issue => {
+              const title = issue.title || '';
+              return title.includes('🎯 Bounty Alert:') || 
+                     title.includes('Bounty Alert:') ||
+                     title.match(/\d+\s+New\s+Opportunit(y|ies)\s+found/i);
+            });
+            
+            console.log(`Found ${bountyAlerts.length} bounty alert issues`);
+            
+            if (bountyAlerts.length <= 1) {
+              console.log('No duplicates to close');
+              return;
+            }
+            
+            const latestIssue = bountyAlerts[0];
+            const duplicates = bountyAlerts.slice(1);
+            
+            console.log(`Keeping latest issue #${latestIssue.number}`);
+            console.log(`Closing ${duplicates.length} older duplicates`);
+            
+            for (const issue of duplicates) {
+              try {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `🤖 Auto-closing duplicate bounty alert.\n\nLatest scan results: #${latestIssue.number}\n\n*This issue was automatically closed to prevent duplicate tracking.*`
+                });
+                
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'not_planned'
+                });
+                
+                console.log(`✓ Closed #${issue.number}`);
+              } catch (error) {
+                console.error(`✗ Failed to close #${issue.number}: ${error.message}`);
+              }
+            }
+            
+            console.log('Deduplication complete');
