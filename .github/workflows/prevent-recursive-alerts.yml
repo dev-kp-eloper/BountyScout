@@ -1,0 +1,43 @@
+name: Prevent Recursive Bounty Alerts
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-recursive:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.issue.title, '🎯 Bounty Alert:')
+    steps:
+      - name: Check and close if recursive
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            const recursivePattern = new RegExp(`github\\.com/${owner}/${repo}/issues`, 'i');
+            
+            if (recursivePattern.test(issue.body || '')) {
+              console.log(`Detected recursive bounty alert in #${issue.number}`);
+              
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: '🤖 Auto-closing: This bounty alert references issues from this repository (recursive scan). BountyScout should only track external bounty opportunities.\n\nPlease update your scanner configuration to exclude this repository from bounty searches.'
+              });
+              
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+            }

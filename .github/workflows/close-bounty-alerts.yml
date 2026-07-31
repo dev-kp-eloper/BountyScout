@@ -1,0 +1,58 @@
+name: Close Stale Bounty Alerts
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close-stale-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close recursive bounty alert issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Find all open issues with bounty alert title pattern
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const bountyAlertPattern = /^🎯 Bounty Alert:/i;
+            const recursivePattern = new RegExp(`github\\.com/${owner}/${repo}/issues`, 'i');
+            
+            for (const issue of issues) {
+              if (bountyAlertPattern.test(issue.title)) {
+                // Check if this is a recursive self-reference
+                const isRecursive = recursivePattern.test(issue.body || '');
+                
+                if (isRecursive) {
+                  console.log(`Closing recursive bounty alert #${issue.number}`);
+                  
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    body: '🤖 Auto-closing: This bounty alert references issues from this repository (recursive scan). BountyScout should only track external bounty opportunities.'
+                  });
+                  
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    state: 'closed',
+                    state_reason: 'not_planned'
+                  });
+                }
+              }
+            }
