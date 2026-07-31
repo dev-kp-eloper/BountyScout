@@ -1,0 +1,53 @@
+name: Deduplicate Bounty Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  deduplicate:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.issue.title, '🎯 Bounty Alert:')
+    permissions:
+      issues: write
+    steps:
+      - name: Close duplicate bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentIssue = context.issue.number;
+            const currentTitle = context.payload.issue.title;
+            
+            // Get all open issues with bounty alert title
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const bountyIssues = issues.filter(issue => 
+              issue.title.startsWith('🎯 Bounty Alert:') && 
+              issue.number !== currentIssue
+            );
+            
+            if (bountyIssues.length > 0) {
+              // Close older bounty alert issues
+              for (const issue of bountyIssues) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `Closing this bounty alert as a newer scan has been posted in #${currentIssue}`
+                });
+              }
+              
+              console.log(`Closed ${bountyIssues.length} older bounty alert(s)`);
+            }

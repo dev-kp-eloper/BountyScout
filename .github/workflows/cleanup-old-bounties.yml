@@ -1,0 +1,50 @@
+name: Cleanup Old Bounty Alerts
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Close stale bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const staleBountyAlerts = issues.filter(issue => {
+              const isOldEnough = new Date(issue.created_at) < sevenDaysAgo;
+              const isBountyAlert = issue.title.startsWith('🎯 Bounty Alert:');
+              return isOldEnough && isBountyAlert;
+            });
+            
+            for (const issue of staleBountyAlerts) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: 'Closing this bounty alert as it is over 7 days old. Check recent issues for the latest bounty opportunities.'
+              });
+            }
+            
+            console.log(`Closed ${staleBountyAlerts.length} stale bounty alert(s)`);
