@@ -1,0 +1,67 @@
+name: Prevent Bounty Alert Spam
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  check-bounty-alert:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check and close duplicate bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const bountyAlertPattern = /^🎯 Bounty Alert:/i;
+            
+            // Only process bounty alert issues
+            if (!bountyAlertPattern.test(issue.title)) {
+              console.log('Not a bounty alert issue, skipping');
+              return;
+            }
+            
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Check for other open bounty alerts
+            const openIssues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const otherBountyAlerts = openIssues.data.filter(i => 
+              i.number !== issue.number && bountyAlertPattern.test(i.title)
+            );
+            
+            // If there are 3 or more other open bounty alerts, close the oldest ones
+            if (otherBountyAlerts.length >= 3) {
+              const sortedByDate = otherBountyAlerts.sort((a, b) => 
+                new Date(a.created_at) - new Date(b.created_at)
+              );
+              
+              // Close all but the 2 most recent
+              const toClose = sortedByDate.slice(0, -2);
+              
+              for (const oldIssue of toClose) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: oldIssue.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: oldIssue.number,
+                  body: 'Automatically closing to prevent bounty alert spam. Newer scan results are available.'
+                });
+                
+                console.log(`Closed old bounty alert #${oldIssue.number}`);
+              }
+            }
