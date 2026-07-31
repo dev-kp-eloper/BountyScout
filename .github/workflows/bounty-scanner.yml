@@ -1,0 +1,133 @@
+name: Bounty Scanner
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install @octokit/rest
+
+      - name: Scan for bounties
+        id: scan
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const keywords = ['bounty', 'bug bounty', '💰', 'reward'];
+            const searchQueries = [
+              'is:issue is:open label:bounty',
+              'is:issue is:open "bug bounty" in:title',
+              'is:issue is:open "💰" in:title',
+              'is:issue is:open bounty in:title'
+            ];
+            
+            const results = [];
+            const seenUrls = new Set();
+            
+            for (const query of searchQueries) {
+              try {
+                const response = await github.rest.search.issuesAndPullRequests({
+                  q: query,
+                  sort: 'updated',
+                  order: 'desc',
+                  per_page: 20
+                });
+                
+                for (const issue of response.data.items) {
+                  if (!issue.pull_request && !seenUrls.has(issue.html_url)) {
+                    seenUrls.add(issue.html_url);
+                    results.push({
+                      title: issue.title,
+                      url: issue.html_url,
+                      repo: issue.repository_url.replace('https://api.github.com/repos/', ''),
+                      comments: issue.comments,
+                      updated: issue.updated_at
+                    });
+                  }
+                }
+                
+                // Rate limit protection
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              } catch (error) {
+                console.log(`Query failed: ${query}`, error.message);
+              }
+            }
+            
+            // Sort by most recently updated
+            results.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+            
+            // Take top 10
+            const topResults = results.slice(0, 10);
+            
+            // Format issue body
+            let body = `### Active Bounty Scan Results\n\n`;
+            body += `**Scan Time:** ${new Date().toISOString().replace('T', ' ').substring(0, 16)} UTC\n\n`;
+            
+            if (topResults.length === 0) {
+              body += '_No new bounty opportunities found in this scan._\n';
+            } else {
+              topResults.forEach((result, index) => {
+                body += `#### ${index + 1}. [${result.title}](${result.url})\n`;
+                body += `- **Repository:** [${result.repo}](https://github.com/${result.repo})\n`;
+                body += `- **Comments:** ${result.comments}\n`;
+                body += `- **Last Updated:** ${result.updated}\n\n`;
+              });
+            }
+            
+            return body;
+
+      - name: Create or update issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueBody = `${{ steps.scan.outputs.result }}`;
+            const issueTitle = `🎯 Bounty Alert: New Opportunities Scan`;
+            
+            // Search for existing open bounty alert issue
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'bounty-scan',
+              per_page: 1
+            });
+            
+            if (existingIssues.data.length > 0) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues.data[0].number,
+                body: issueBody
+              });
+              console.log(`Updated issue #${existingIssues.data[0].number}`);
+            } else {
+              // Create new issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['bounty-scan', 'automated']
+              });
+              console.log(`Created issue #${newIssue.data.number}`);
+            }
