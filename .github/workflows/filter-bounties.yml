@@ -1,0 +1,60 @@
+name: Filter Bounty Issues
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close self-referential bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'bounty',
+              per_page: 100
+            });
+
+            for (const issue of issues.data) {
+              const title = issue.title.toLowerCase();
+              const body = issue.body || '';
+              
+              // Detect self-referential bounty scanner issues
+              const isSelfReferential = (
+                title.includes('bounty alert') ||
+                title.includes('new opportunit') ||
+                title.includes('bounty scan')
+              ) && (
+                body.includes(context.repo.repo) ||
+                body.includes('BountyScout')
+              );
+
+              if (isSelfReferential) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'not_planned'
+                });
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '🤖 Auto-closed: This is a self-referential bounty scanner issue. Bounty scanners should not create issues about their own scan results.'
+                });
+
+                console.log(`Closed self-referential issue #${issue.number}: ${issue.title}`);
+              }
+            }

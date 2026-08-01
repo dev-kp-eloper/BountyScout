@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💰 Bounty Submissions
+    url: https://github.com/vansh-09/BountyScout/discussions
+    about: Please use Discussions for bounty-related topics
+  - name: 📋 Bug Reports & Features
+    url: https://github.com/vansh-09/BountyScout/issues/new/choose
+    about: Use issue templates for bugs and feature requests
