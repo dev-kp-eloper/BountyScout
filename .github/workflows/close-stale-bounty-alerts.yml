@@ -1,0 +1,63 @@
+name: Close Stale Bounty Alerts
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close stale bounty alert issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Get all open issues with bounty alert title pattern
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const bountyAlertPattern = /^🎯 Bounty Alert:/i;
+            const now = Date.now();
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+            
+            for (const issue of issues.data) {
+              if (bountyAlertPattern.test(issue.title)) {
+                const createdAt = new Date(issue.created_at).getTime();
+                const age = now - createdAt;
+                
+                if (age > maxAge) {
+                  console.log(`Closing stale bounty alert #${issue.number}: ${issue.title}`);
+                  
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    body: '🤖 Auto-closing this bounty alert as it is older than 7 days. New opportunities are scanned regularly.'
+                  });
+                  
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    state: 'closed'
+                  });
+                  
+                  // Add a small delay to avoid rate limiting
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+              }
+            }
+            
+            console.log('Stale bounty alert cleanup completed.');
