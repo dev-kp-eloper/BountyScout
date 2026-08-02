@@ -1,0 +1,51 @@
+name: Filter Self-References
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check for self-referencing bounty alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = issue.body || '';
+            
+            // Only process bounty alert issues
+            if (!title.includes('bounty alert') && !title.includes('opportunit')) {
+              console.log('Not a bounty alert issue, skipping');
+              return;
+            }
+            
+            const currentRepo = context.repo.owner + '/' + context.repo.repo;
+            const bodyLower = body.toLowerCase();
+            const repoPattern = new RegExp(currentRepo.replace('/', '\\/'), 'i');
+            
+            // Check if issue references its own repository
+            if (repoPattern.test(body)) {
+              console.log('Self-reference detected in bounty alert');
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '⚠️ **Self-Reference Detected**\n\nThis bounty alert contains a reference to this repository itself, which may indicate a scanning loop. Closing to prevent recursion.'
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                labels: ['invalid', 'self-reference']
+              });
+            } else {
+              console.log('No self-reference detected');
+            }

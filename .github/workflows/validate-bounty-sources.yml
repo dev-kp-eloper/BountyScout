@@ -1,0 +1,59 @@
+name: Validate Bounty Sources
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Validate bounty alert sources
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title || '';
+            const body = issue.body || '';
+            
+            if (!title.toLowerCase().includes('bounty alert')) {
+              return;
+            }
+            
+            const currentRepo = `${context.repo.owner}/${context.repo.repo}`;
+            const lines = body.split('\n');
+            let selfRefCount = 0;
+            let totalRefs = 0;
+            
+            for (const line of lines) {
+              const repoMatch = line.match(/\[([^/]+)\/([^\]]+)\]/);
+              if (repoMatch) {
+                totalRefs++;
+                const foundRepo = `${repoMatch[1]}/${repoMatch[2]}`;
+                if (foundRepo.toLowerCase() === currentRepo.toLowerCase()) {
+                  selfRefCount++;
+                }
+              }
+            }
+            
+            if (selfRefCount > 0) {
+              const warningMsg = `🔄 **Circular Reference Warning**\n\nThis bounty scan found ${selfRefCount} reference(s) to this repository (${currentRepo}). This suggests a scanning feedback loop.\n\n**Action:** Closing issue to prevent infinite recursion.`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: warningMsg
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+                labels: ['automated', 'circular-reference', 'invalid']
+              });
+            }
