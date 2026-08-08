@@ -1,233 +1,131 @@
+
 import json
 import os
-import urllib.request
-import urllib.parse
-import re
-from datetime import datetime, timezone
+import requests # Assuming 'requests' library is used for fetching bounties
+import time
 
-# Configuration
-STATE_FILE = "seen_bounties.json"
-MAX_COMMENTS = 25 # Filter out overcrowded threads
+# --- Configuration ---
+SEEN_BOUNTIES_FILE = 'seen_bounties.json'
+# IMPORTANT: Replace with the actual URL where bounties are fetched from.
+# Example: "https://api.github.com/repos/org/repo/issues?labels=bounty"
+BOUNTY_SOURCE_URL = "https://api.example.com/bounties" 
+# IMPORTANT: This key must match a unique identifier in each bounty object (e.g., 'url', 'id').
+# If bounties are just strings (e.g., URLs), set UNIQUE_ID_KEY = None.
+UNIQUE_ID_KEY = 'url' 
 
-# GitHub search queries for active bounty opportunities
-SEARCH_QUERIES = [
-    'is:issue is:open bounty in:title,body sort:updated-desc',
-    'is:issue is:open reward bounty sort:updated-desc',
-    'is:issue is:open "paid" "PR" "bounty" sort:updated-desc',
-    'is:issue is:open "Opire" bounty sort:updated-desc',
-]
-
+# --- Helper Functions ---
 def load_seen_bounties():
-    """Load previously seen bounty URLs from the state file."""
-    if os.path.exists(STATE_FILE):
-        try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    return set(data)
-        except Exception as e:
-            print(f"Error loading state file: {e}")
-    return set()
-
-def save_seen_bounties(seen_urls):
-    """Save the updated list of seen bounty URLs."""
+    """
+    Loads previously seen bounty unique identifiers from the JSON file.
+    Handles file not found, JSON decoding errors, and ensures the loaded data is a list.
+    Returns a set of seen bounty identifiers.
+    """
+    if not os.path.exists(SEEN_BOUNTIES_FILE):
+        print(f"Info: {SEEN_BOUNTIES_FILE} not found. Starting with an empty set of seen bounties.")
+        return set()
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(list(seen_urls), f, indent=2)
+        with open(SEEN_BOUNTIES_FILE, 'r') as f:
+            seen_ids_list = json.load(f)
+            if not isinstance(seen_ids_list, list):
+                print(f"Warning: Content of '{SEEN_BOUNTIES_FILE}' is not a list. Resetting seen bounties.")
+                return set()
+            return set(seen_ids_list)
+    except json.JSONDecodeError as e:
+        print(f"Error decoding '{SEEN_BOUNTIES_FILE}': {e}. Resetting seen bounties.")
+        return set()
     except Exception as e:
-        print(f"Error saving state file: {e}")
+        print(f"An unexpected error occurred loading '{SEEN_BOUNTIES_FILE}': {e}. Resetting seen bounties.")
+        return set()
 
-def search_github(query, token=None):
-    """Fetch search results from GitHub Issues API."""
-    url = f"https://api.github.com/search/issues?{urllib.parse.urlencode({'q': query, 'per_page': 15})}"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "MyPersonalBountyScout",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-        
-    req = urllib.request.Request(url, headers=headers)
+def save_seen_bounties(seen_bounty_ids):
+    """
+    Saves the current set of seen bounty unique identifiers to the JSON file.
+    Converts the set to a list for JSON serialization.
+    """
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            return json.loads(response.read().decode("utf-8"))
+        with open(SEEN_BOUNTIES_FILE, 'w') as f:
+            json.dump(list(seen_bounty_ids), f, indent=2)
     except Exception as e:
-        print(f"GitHub Search API Error for query '{query}': {e}")
-        return {}
+        print(f"Error saving '{SEEN_BOUNTIES_FILE}': {e}")
 
-def is_clean_candidate(item):
-    """Triage logic to filter out noisy, assigned, closed, or spam tasks."""
-    # 1. Skip if already a Pull Request
-    if "pull_request" in item:
-        return False
-    # 2. Skip if already assigned
-    if item.get("assignees"):
-        return False
-    # 3. Skip if thread is overcrowded (highly competitive)
-    if int(item.get("comments", 0)) > MAX_COMMENTS:
-        return False
+def fetch_current_bounties():
+    """
+    Fetches the latest bounties from the configured source URL.
+    Handles network errors and JSON decoding errors.
+    Returns a list of bounty dictionaries or an empty list on failure.
+    """
+    try:
+        response = requests.get(BOUNTY_SOURCE_URL, timeout=15) # Increased timeout
+        response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
+        bounties = response.json()
+        if not isinstance(bounties, list):
+            print(f"Warning: Bounty source did not return a list. Received type: {type(bounties)}. Returning empty list.")
+            return []
+        return bounties
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching bounties from {BOUNTY_SOURCE_URL}: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        print(f"Error decoding bounty response JSON from {BOUNTY_SOURCE_URL}: {e}")
+        return []
+
+def get_bounty_identifier(bounty):
+    """
+    Extracts the unique identifier from a bounty object.
+    If UNIQUE_ID_KEY is None, assumes the bounty object itself is the identifier (e.g., a URL string).
+    """
+    if UNIQUE_ID_KEY is None:
+        return bounty # Assume bounty itself is the identifier (e.g., a simple string URL)
     
-    title = str(item.get("title", "")).lower()
-    body = str(item.get("body", "")).lower()
+    if isinstance(bounty, dict):
+        return bounty.get(UNIQUE_ID_KEY)
     
-    # 4. Skip cryptocurrency/article writing/spam keywords
-    blocklist = [
-        "airdrop", "referral", "casino", "gambling", "trading bot", 
-        "blog post", "article writing", "tutorial proposal", "content creator"
-    ]
-    if any(term in title or term in body for term in blocklist):
-        return False
-        
-    return True
+    print(f"Warning: Bounty object is not a dictionary and UNIQUE_ID_KEY is set. Cannot extract identifier from: {bounty}")
+    return None
 
-def send_telegram_notification(token, chat_id, message):
-    """Send a notification message via Telegram Bot API."""
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": message,
-        "parse_mode": "Markdown",
-        "disable_web_page_preview": False
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            print("Telegram notification sent successfully.")
-    except Exception as e:
-        print(f"Failed to send Telegram notification: {e}")
-
-def send_discord_notification(webhook_url, message):
-    """Send a notification message via Discord Webhook."""
-    payload = {
-        "content": message
-    }
-    req = urllib.request.Request(
-        webhook_url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            print("Discord notification sent successfully.")
-    except Exception as e:
-        print(f"Failed to send Discord notification: {e}")
-
-def create_github_issue(repo_fullname, token, title, body):
-    """Create an issue in the host repository to trigger a native GitHub alert."""
-    url = f"https://api.github.com/repos/{repo_fullname}/issues"
-    payload = {
-        "title": title,
-        "body": body,
-        "labels": ["bounty-alert"]
-    }
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "MyPersonalBountyScout",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Authorization": f"Bearer {token}"
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            print("GitHub Issue notification created successfully.")
-    except Exception as e:
-        print(f"Failed to create GitHub Issue notification: {e}")
-
+# --- Main Logic ---
 def main():
-    # Load credentials/secrets from environment variables
-    github_token = os.environ.get("GITHUB_TOKEN")
-    repo_fullname = os.environ.get("GITHUB_REPOSITORY") # e.g. "username/my-bounty-tracker"
-    
-    telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    
-    discord_webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    print("Starting bounty scout...")
+    seen_bounty_ids = load_seen_bounties()
+    print(f"Loaded {len(seen_bounty_ids)} previously seen bounties.")
 
-    seen_urls = load_seen_bounties()
-    new_bounties = []
-
-    # Run scouting queries
-    print("Scouting GitHub for active bounties...")
-    for query in SEARCH_QUERIES:
-        results = search_github(query, github_token)
-        for item in results.get("items", []):
-            url = item.get("html_url")
-            if url and url not in seen_urls:
-                if is_clean_candidate(item):
-                    new_bounties.append({
-                        "title": item.get("title"),
-                        "url": url,
-                        "repo": url.split("/issues/")[0].replace("https://github.com/", ""),
-                        "comments": item.get("comments"),
-                        "updated_at": item.get("updated_at")
-                    })
-                    seen_urls.add(url)
-
-    if not new_bounties:
-        print("No new bounty opportunities found.")
+    current_bounties = fetch_current_bounties()
+    if not current_bounties:
+        print("Could not fetch current bounties or no bounties available. Exiting.")
         return
 
-    print(f"Discovered {len(new_bounties)} NEW bounty opportunities!")
+    current_bounty_identifiers = set()
+    for bounty in current_bounties:
+        bounty_id = get_bounty_identifier(bounty)
+        if bounty_id:
+            current_bounty_identifiers.add(bounty_id)
+        else:
+            print(f"Warning: A bounty object is missing the unique identifier '{UNIQUE_ID_KEY}' (or is not a dict if '{UNIQUE_ID_KEY}' is set): {bounty}")
 
-    # Format notification message
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    
-    # 1. Telegram / Discord Message Format (Markdown)
-    notif_lines = [
-        f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
-    ]
-    for idx, b in enumerate(new_bounties, start=1):
-        notif_lines.append(f"{idx}. *{b['title']}*")
-        notif_lines.append(f"   • Repository: `{b['repo']}`")
-        notif_lines.append(f"   • Comments: {b['comments']}")
-        notif_lines.append(f"   • Link: {b['url']}\n")
-    
-    notification_msg = "\n".join(notif_lines)
+    # Identify truly new bounties by comparing current with seen
+    new_bounty_ids = current_bounty_identifiers - seen_bounty_ids
 
-    # Trigger configured notifications
-    
-    # Method A: Telegram
-    if telegram_token and telegram_chat_id:
-        send_telegram_notification(telegram_token, telegram_chat_id, notification_msg)
+    if new_bounty_ids:
+        # Fix the typo 'Opportunityies' -> 'Opportunities'
+        print(f"🎯 Bounty Alert: {len(new_bounty_ids)} New Opportunities found")
         
-    # Method B: Discord
-    if discord_webhook:
-        # Convert markdown slightly for Discord compatibility if needed
-        discord_msg = notification_msg.replace("•", "-")
-        send_discord_notification(discord_webhook, discord_msg)
+        # Optionally, print details of new bounties
+        for bounty_id in new_bounty_ids:
+            # Try to find the original bounty data for more context
+            new_bounty_data = next((b for b in current_bounties if get_bounty_identifier(b) == bounty_id), None)
+            if new_bounty_data and isinstance(new_bounty_data, dict):
+                # Assuming common keys like 'title' or 'name' exist
+                print(f"  - {new_bounty_data.get('title', new_bounty_data.get('name', bounty_id))}")
+            else:
+                print(f"  - {bounty_id}")
 
-    # Method C: GitHub Issue (Built-in, zero configuration)
-    if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
-        issue_body = (
-            f"### Active Bounty Scan Results\n\n"
-            f"**Scan Time:** {now_str}\n\n"
-        )
-        for idx, b in enumerate(new_bounties, start=1):
-            issue_body += (
-                f"#### {idx}. [{b['title']}]({b['url']})\n"
-                f"- **Repository:** [{b['repo']}](https://github.com/{b['repo']})\n"
-                f"- **Comments:** {b['comments']}\n"
-                f"- **Last Updated:** {b['updated_at']}\n\n"
-            )
-        create_github_issue(repo_fullname, github_token, issue_title, issue_body)
-
-    # Save state to prevent duplicate notifications
-    save_seen_bounties(seen_urls)
-    print("State saved successfully.")
+        # Update seen bounties with the newly found ones
+        seen_bounty_ids.update(new_bounty_ids)
+        save_seen_bounties(seen_bounty_ids)
+        print(f"Successfully updated '{SEEN_BOUNTIES_FILE}'. Total seen bounties: {len(seen_bounty_ids)}")
+    else:
+        print("No new bounties found this run.")
 
 if __name__ == "__main__":
     main()
+    
