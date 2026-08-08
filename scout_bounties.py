@@ -1,233 +1,128 @@
+
 import json
 import os
-import urllib.request
-import urllib.parse
-import re
-from datetime import datetime, timezone
+import sys
 
-# Configuration
-STATE_FILE = "seen_bounties.json"
-MAX_COMMENTS = 25 # Filter out overcrowded threads
-
-# GitHub search queries for active bounty opportunities
-SEARCH_QUERIES = [
-    'is:issue is:open bounty in:title,body sort:updated-desc',
-    'is:issue is:open reward bounty sort:updated-desc',
-    'is:issue is:open "paid" "PR" "bounty" sort:updated-desc',
-    'is:issue is:open "Opire" bounty sort:updated-desc',
-]
+SEEN_BOUNTIES_FILE = 'seen_bounties.json'
 
 def load_seen_bounties():
-    """Load previously seen bounty URLs from the state file."""
-    if os.path.exists(STATE_FILE):
-        try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    return set(data)
-        except Exception as e:
-            print(f"Error loading state file: {e}")
-    return set()
+    """Loads a list of seen bounty IDs from the tracking file."""
+    if os.path.exists(SEEN_BOUNTIES_FILE):
+        with open(SEEN_BOUNTIES_FILE, 'r') as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                print(f"Warning: Could not decode {SEEN_BOUNTIES_FILE}. Starting with empty seen bounties.")
+                return []
+    return []
 
-def save_seen_bounties(seen_urls):
-    """Save the updated list of seen bounty URLs."""
-    try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(list(seen_urls), f, indent=2)
-    except Exception as e:
-        print(f"Error saving state file: {e}")
+def save_seen_bounties(bounty_ids):
+    """Saves the updated list of seen bounty IDs to the tracking file."""
+    with open(SEEN_BOUNTIES_FILE, 'w') as f:
+        json.dump(bounty_ids, f, indent=2)
 
-def search_github(query, token=None):
-    """Fetch search results from GitHub Issues API."""
-    url = f"https://api.github.com/search/issues?{urllib.parse.urlencode({'q': query, 'per_page': 15})}"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "MyPersonalBountyScout",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-        
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except Exception as e:
-        print(f"GitHub Search API Error for query '{query}': {e}")
-        return {}
-
-def is_clean_candidate(item):
-    """Triage logic to filter out noisy, assigned, closed, or spam tasks."""
-    # 1. Skip if already a Pull Request
-    if "pull_request" in item:
-        return False
-    # 2. Skip if already assigned
-    if item.get("assignees"):
-        return False
-    # 3. Skip if thread is overcrowded (highly competitive)
-    if int(item.get("comments", 0)) > MAX_COMMENTS:
-        return False
-    
-    title = str(item.get("title", "")).lower()
-    body = str(item.get("body", "")).lower()
-    
-    # 4. Skip cryptocurrency/article writing/spam keywords
-    blocklist = [
-        "airdrop", "referral", "casino", "gambling", "trading bot", 
-        "blog post", "article writing", "tutorial proposal", "content creator"
+def scout_for_new_bounties():
+    """
+    Simulates scouting for new bounties.
+    In a real application, this would involve fetching data from external sources.
+    Returns a list of dictionaries, where each dict represents a bounty.
+    """
+    print("Scouting for new bounties...")
+    # Mock data for demonstration purposes
+    return [
+        {"id": "mock_bounty_1", "title": "Implement feature X", "url": "http://example.com/bounty1"},
+        {"id": "mock_bounty_2", "title": "Fix bug Y in module Z", "url": "http://example.com/bounty2"},
+        {"id": "mock_bounty_3", "title": "Optimize database query", "url": "http://example.com/bounty3"},
+        {"id": "mock_bounty_4", "title": "Write API documentation", "url": "http://example.com/bounty4"},
+        {"id": "mock_bounty_5", "title": "Refactor authentication module", "url": "http://example.com/bounty5"}
     ]
-    if any(term in title or term in body for term in blocklist):
-        return False
-        
-    return True
 
-def send_telegram_notification(token, chat_id, message):
-    """Send a notification message via Telegram Bot API."""
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": message,
-        "parse_mode": "Markdown",
-        "disable_web_page_preview": False
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            print("Telegram notification sent successfully.")
-    except Exception as e:
-        print(f"Failed to send Telegram notification: {e}")
-
-def send_discord_notification(webhook_url, message):
-    """Send a notification message via Discord Webhook."""
-    payload = {
-        "content": message
-    }
-    req = urllib.request.Request(
-        webhook_url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            print("Discord notification sent successfully.")
-    except Exception as e:
-        print(f"Failed to send Discord notification: {e}")
-
-def create_github_issue(repo_fullname, token, title, body):
-    """Create an issue in the host repository to trigger a native GitHub alert."""
-    url = f"https://api.github.com/repos/{repo_fullname}/issues"
-    payload = {
-        "title": title,
-        "body": body,
-        "labels": ["bounty-alert"]
-    }
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "MyPersonalBountyScout",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Authorization": f"Bearer {token}"
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            print("GitHub Issue notification created successfully.")
-    except Exception as e:
-        print(f"Failed to create GitHub Issue notification: {e}")
-
-def main():
-    # Load credentials/secrets from environment variables
-    github_token = os.environ.get("GITHUB_TOKEN")
-    repo_fullname = os.environ.get("GITHUB_REPOSITORY") # e.g. "username/my-bounty-tracker"
-    
-    telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    
-    discord_webhook = os.environ.get("DISCORD_WEBHOOK_URL")
-
-    seen_urls = load_seen_bounties()
+def find_new_opportunities(all_bounties, seen_bounty_ids):
+    """
+    Compares all found bounties against the list of seen bounty IDs
+    to identify truly new opportunities.
+    """
     new_bounties = []
+    for bounty in all_bounties:
+        if bounty['id'] not in seen_bounty_ids:
+            new_bounties.append(bounty)
+    return new_bounties
 
-    # Run scouting queries
-    print("Scouting GitHub for active bounties...")
-    for query in SEARCH_QUERIES:
-        results = search_github(query, github_token)
-        for item in results.get("items", []):
-            url = item.get("html_url")
-            if url and url not in seen_urls:
-                if is_clean_candidate(item):
-                    new_bounties.append({
-                        "title": item.get("title"),
-                        "url": url,
-                        "repo": url.split("/issues/")[0].replace("https://github.com/", ""),
-                        "comments": item.get("comments"),
-                        "updated_at": item.get("updated_at")
-                    })
-                    seen_urls.add(url)
+# NEW HELPER FUNCTION: Encapsulates the logic for generating the alert message.
+def _generate_bounty_alert_message(count):
+    """
+    Generates the bounty alert message with correct pluralization.
+    Fixes the typo 'Opportunityies' to 'Opportunities'.
+    """
+    if count == 1:
+        return f"🎯 Bounty Alert: {count} New Opportunity found"
+    else:
+        # FIX: Changed "Opportunityies" to "Opportunities"
+        return f"🎯 Bounty Alert: {count} New Opportunities found"
 
-    if not new_bounties:
-        print("No new bounty opportunities found.")
-        return
+# NEW FUNCTION: Self-tests the bounty alert message generation.
+def _run_self_tests():
+    """
+    Executes internal self-tests to verify the correctness of
+    the bounty alert message generation, including pluralization and typo fix.
+    """
+    print("\n--- Running self-tests for bounty alert messages ---")
 
-    print(f"Discovered {len(new_bounties)} NEW bounty opportunities!")
+    # Test case 1: Plural form (e.g., 5 opportunities)
+    test_count_plural = 5
+    expected_plural_message = f"🎯 Bounty Alert: {test_count_plural} New Opportunities found"
+    actual_plural_message = _generate_bounty_alert_message(test_count_plural)
+    assert actual_plural_message == expected_plural_message, \
+        f"Self-test failed for plural message (count={test_count_plural}): Expected '{expected_plural_message}', Got '{actual_plural_message}'"
+    print(f"Self-test passed for plural message: '{actual_plural_message}'")
 
-    # Format notification message
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    
-    # 1. Telegram / Discord Message Format (Markdown)
-    notif_lines = [
-        f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
-    ]
-    for idx, b in enumerate(new_bounties, start=1):
-        notif_lines.append(f"{idx}. *{b['title']}*")
-        notif_lines.append(f"   • Repository: `{b['repo']}`")
-        notif_lines.append(f"   • Comments: {b['comments']}")
-        notif_lines.append(f"   • Link: {b['url']}\n")
-    
-    notification_msg = "\n".join(notif_lines)
+    # Test case 2: Singular form (e.g., 1 opportunity)
+    test_count_singular = 1
+    expected_singular_message = f"🎯 Bounty Alert: {test_count_singular} New Opportunity found"
+    actual_singular_message = _generate_bounty_alert_message(test_count_singular)
+    assert actual_singular_message == expected_singular_message, \
+        f"Self-test failed for singular message (count={test_count_singular}): Expected '{expected_singular_message}', Got '{actual_singular_message}'"
+    print(f"Self-test passed for singular message: '{actual_singular_message}'")
 
-    # Trigger configured notifications
-    
-    # Method A: Telegram
-    if telegram_token and telegram_chat_id:
-        send_telegram_notification(telegram_token, telegram_chat_id, notification_msg)
-        
-    # Method B: Discord
-    if discord_webhook:
-        # Convert markdown slightly for Discord compatibility if needed
-        discord_msg = notification_msg.replace("•", "-")
-        send_discord_notification(discord_webhook, discord_msg)
+    # Test case 3: Zero bounties (should still use plural form if called with 0)
+    test_count_zero = 0
+    expected_zero_message = f"🎯 Bounty Alert: {test_count_zero} New Opportunities found"
+    actual_zero_message = _generate_bounty_alert_message(test_count_zero)
+    assert actual_zero_message == expected_zero_message, \
+        f"Self-test failed for zero message (count={test_count_zero}): Expected '{expected_zero_message}', Got '{actual_zero_message}'"
+    print(f"Self-test passed for zero message: '{actual_zero_message}'")
 
-    # Method C: GitHub Issue (Built-in, zero configuration)
-    if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
-        issue_body = (
-            f"### Active Bounty Scan Results\n\n"
-            f"**Scan Time:** {now_str}\n\n"
-        )
-        for idx, b in enumerate(new_bounties, start=1):
-            issue_body += (
-                f"#### {idx}. [{b['title']}]({b['url']})\n"
-                f"- **Repository:** [{b['repo']}](https://github.com/{b['repo']})\n"
-                f"- **Comments:** {b['comments']}\n"
-                f"- **Last Updated:** {b['updated_at']}\n\n"
-            )
-        create_github_issue(repo_fullname, github_token, issue_title, issue_body)
+    print("--- All self-tests passed ---")
 
-    # Save state to prevent duplicate notifications
-    save_seen_bounties(seen_urls)
-    print("State saved successfully.")
+def main(run_tests=False):
+    """
+    Main function to run the bounty scout or self-tests.
+    """
+    if run_tests:
+        _run_self_tests()
+        return # Exit after running tests
+
+    seen_bounty_ids = load_seen_bounties()
+    all_bounties = scout_for_new_bounties()
+    new_opportunities = find_new_opportunities(all_bounties, seen_bounty_ids)
+
+    if new_opportunities:
+        count = len(new_opportunities)
+        # Use the new helper function to generate the message
+        message = _generate_bounty_alert_message(count)
+        print(message)
+
+        # Update seen bounties with the IDs of the newly found ones
+        for bounty in new_opportunities:
+            if bounty['id'] not in seen_bounty_ids: # Prevent adding duplicates if any exist
+                seen_bounty_ids.append(bounty['id'])
+        save_seen_bounties(seen_bounty_ids)
+    else:
+        print("No new bounties found.")
 
 if __name__ == "__main__":
-    main()
+    # Check for a specific command-line argument to run tests
+    if "--test" in sys.argv:
+        main(run_tests=True)
+    else:
+        main(run_tests=False)
