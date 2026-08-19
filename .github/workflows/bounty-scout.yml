@@ -1,20 +1,18 @@
-name: Scout Active Bounties Hourly
+export interface ValidationContext {
+  isValid: boolean;
+  isExpired?: boolean;
+  timestamp?: number;
+}
 
-on:
-  schedule:
-    - cron: '0 * * * *' # Runs at minute 0 of every single hour, everyday
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI tab
-
-jobs:
-  scout:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed to commit and persist seen_bounties.json state file
-      issues: write   # Needed if you choose Option A (Native GitHub Issue alerts)
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+export function validateAndProcess(item?: ValidationContext | null): boolean {
+  if (!item || typeof item !== 'object') {
+    return false;
+  }
+  if (!item.isValid || item.isExpired) {
+    return false;
+  }
+  return true;
+}4
 
       - name: Set up Python
         uses: actions/setup-python@v5
