@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Run Unit Tests
+        run: python -m unittest test_scout_bounties.py
+
       - name: Run Bounty Scout
         env:
           # Required for GitHub API search and native issue notification
