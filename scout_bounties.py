@@ -213,6 +213,11 @@ def main():
     if github_token and repo_fullname:
         issue_title = "🎯 Bounty Alert: 14 New Opportunities found"
         issue_body = (
+            "### Active Bounty Scan Results\n\n"
+            "**Scan Time:** {now_str}\n\n"
+        )
+        issue_body += "Could not reproduce the issue.\n\n"
+        issue_body = (
             f"### Active Bounty Scan Results\n\n"
             f"**Scan Time:** {now_str}\n\n"
         )
