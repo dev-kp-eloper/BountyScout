@@ -1,0 +1,115 @@
+[
+  {
+    "id": "PBA-L2-011",
+    "title": "provision the P-256 verifier on 40204 + ship passkey install guard",
+    "url": "https://github.com/CitrateNetwork/citrate-chain/issues/216",
+    "repository": "CitrateNetwork/citrate-chain",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:16:41Z",
+    "bountyAmount": null,
+    "type": "OWNER",
+    "status": "active"
+  },
+  {
+    "id": "OMI-18852",
+    "title": "fix(backend/candidates): sanitize store error and task link validation reflections",
+    "url": "https://github.com/BasedHardware/omi/issues/18852",
+    "repository": "BasedHardware/omi",
+    "comments": 1,
+    "lastUpdated": "2026-09-25T07:16:03Z",
+    "bountyAmount": 50,
+    "type": "Bounty proposal",
+    "status": "active"
+  },
+  {
+    "id": "OMI-18860",
+    "title": "fix(backend/memories): sanitize temporal read view and device scope error reflections",
+    "url": "https://github.com/BasedHardware/omi/issues/18860",
+    "repository": "BasedHardware/omi",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:14:32Z",
+    "bountyAmount": 50,
+    "type": "Bounty proposal",
+    "status": "active"
+  },
+  {
+    "id": "PBA-L2-059-062-063",
+    "title": "INFO residuals from the 2026-09-24 pre-bounty audit",
+    "url": "https://github.com/CitrateNetwork/citrate-chain/issues/215",
+    "repository": "CitrateNetwork/citrate-chain",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:04:04Z",
+    "bountyAmount": null,
+    "type": "Audit residual",
+    "status": "active"
+  },
+  {
+    "id": "PBA-L2-035",
+    "title": "namespace MultiSigEnvelope ids by drafter (liveness)",
+    "url": "https://github.com/CitrateNetwork/citrate-chain/issues/214",
+    "repository": "CitrateNetwork/citrate-chain",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:04:02Z",
+    "bountyAmount": null,
+    "type": "Residual",
+    "status": "active"
+  },
+  {
+    "id": "PBA-L2-048-049",
+    "title": "MemberBond release after demotion; MembershipStakeVault two-step ownership",
+    "url": "https://github.com/CitrateNetwork/citrate-chain/issues/213",
+    "repository": "CitrateNetwork/citrate-chain",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:04:00Z",
+    "bountyAmount": null,
+    "type": "Feature",
+    "status": "active",
+    "notes": "deferred: UUPS upgrade ceremony"
+  },
+  {
+    "id": "PBA-L2-037",
+    "title": "CapabilityGrant self-issuance into a foreign tenant",
+    "url": "https://github.com/CitrateNetwork/citrate-chain/issues/212",
+    "repository": "CitrateNetwork/citrate-chain",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T07:03:59Z",
+    "bountyAmount": null,
+    "type": "Security",
+    "status": "active",
+    "notes": "deferred: needs tenant membership primitive"
+  },
+  {
+    "id": "STELLAR-1135",
+    "title": "PositionManager.update_position lets unauthenticated callers overwrite any active position",
+    "url": "https://github.com/Smartdevs17/stellarlend/issues/1135",
+    "repository": "Smartdevs17/stellarlend",
+    "comments": 0,
+    "lastUpdated": "2026-09-25T06:59:07Z",
+    "bountyAmount": null,
+    "type": "BUG BOUNTY",
+    "status": "active"
+  },
+  {
+    "id": "BP-1634",
+    "title": "Fix one deterministic agent-card discovery regression",
+    "url": "https://github.com/zhangjiayang6835-cyber/bounty-plaza/issues/1634",
+    "repository": "zhangjiayang6835-cyber/bounty-plaza",
+    "comments": 1,
+    "lastUpdated": "2026-09-25T06:49:11Z",
+    "bountyAmount": null,
+    "type": "Bounty",
+    "status": "active"
+  },
+  {
+    "id": "INCOMPLETE-20260925",
+    "title": "[truncated] chore(ci): 10",
+    "url": null,
+    "repository": null,
+    "comments": 0,
+    "lastUpdated": "2026-09-25T06:48:55Z",
+    "bountyAmount": null,
+    "type": "Incomplete",
+    "status": "discarded",
+    "notes": "Source data truncated, cannot process"
+  }
+]
