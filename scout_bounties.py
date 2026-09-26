@@ -19,7 +19,7 @@ SEARCH_QUERIES = [
 
 def load_seen_bounties():
     """Load previously seen bounty URLs from the state file."""
-    if os.path.exists(STATE_FILE):
+    if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) > 0:
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
