@@ -1,0 +1,72 @@
+[
+  {
+    "title": "[[UI 4.0.2] Finish the icon system for the shared concepts — 1,099 emoji across 174 files]",
+    "issue_url": "https://github.com/Jarvichi/jarvs-amazing-web-game/issues/2321",
+    "repository": "Jarvichi/jarvs-amazing-web-game",
+    "comments": 5,
+    "last_updated": "2026-09-27T13:38:46Z"
+  },
+  {
+    "title": "[[P2] 跨模块代码质量与测试债：拆分长路径、统一不变量]",
+    "issue_url": "https://github.com/TokenNotIncluded/msg.lmm.best/issues/85",
+    "repository": "TokenNotIncluded/msg.lmm.best",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:38:18Z"
+  },
+  {
+    "title": "[Agent-posted bounties with escrow (sub of #337, late)]",
+    "issue_url": "https://github.com/killerboyyy777/Machine-Learning-mmo/issues/387",
+    "repository": "killerboyyy777/Machine-Learning-mmo",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:35:01Z"
+  },
+  {
+    "title": "[UniformGroup signature omits array size and reuses an incompatible UBO sync function]",
+    "issue_url": "https://github.com/pixijs/pixijs/issues/12244",
+    "repository": "pixijs/pixijs",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:33:02Z"
+  },
+  {
+    "title": "[World-state-posted standing bounties (sub of #337)]",
+    "issue_url": "https://github.com/killerboyyy777/Machine-Learning-mmo/issues/386",
+    "repository": "killerboyyy777/Machine-Learning-mmo",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:31:44Z"
+  },
+  {
+    "title": "[Review of 2026-09-27: fix plan before release 0.1.0]",
+    "issue_url": "https://github.com/JonasLundin/CVD-knowledge-base/issues/1",
+    "repository": "JonasLundin/CVD-knowledge-base",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:27:27Z"
+  },
+  {
+    "title": "[todo.txt exporter: a bare \"x\" description becomes completion syntax when metadata is appended]",
+    "issue_url": "https://github.com/BasedHardware/omi/issues/19382",
+    "repository": "BasedHardware/omi",
+    "comments": 3,
+    "last_updated": "2026-09-27T13:27:19Z"
+  },
+  {
+    "title": "[Expand guidance and glossary pages; add missing process and role pages; move FIRST PSIRT SF to standards]",
+    "issue_url": "https://github.com/JonasLundin/CVD-knowledge-base/issues/17",
+    "repository": "JonasLundin/CVD-knowledge-base",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:27:17Z"
+  },
+  {
+    "title": "[[Bounty proposal] feat(python-cli): conversations -> TSV export recipe ( proposed)]",
+    "issue_url": "https://github.com/BasedHardware/omi/issues/19310",
+    "repository": "BasedHardware/omi",
+    "comments": 0,
+    "last_updated": "2026-09-27T13:26:33Z"
+  },
+  {
+    "title": "[[Bounty proposal] feat(python-cli): backup bundle packaging recipe ( proposed)]",
+    "issue_url": "https://github.com/BasedHardware/omi/issues/19312",
+    "repository": "BasedHardware/omi",
+    "comments": 1,
+    "last_updated": "2026-09-27T13:26:31Z"
+  }
+]
