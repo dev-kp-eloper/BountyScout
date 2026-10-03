@@ -1,0 +1,54 @@
+```yaml
+title: Active Bounty Scan Results
+details:
+- Scan Time: 2026-09-25 01:14 UTC
+- [[Bounty proposal] docs(python-cli): Guarani (gn) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18814
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:56Z
+- [[Bounty proposal] docs(python-cli): Rusyn (rue) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18813
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:48Z
+- [[Bounty proposal] docs(python-cli): Kashubian (csb) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18812
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:40Z
+- [[Bounty proposal] docs(python-cli): Silesian (szl) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18811
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:32Z
+- [[Bounty proposal] docs(python-cli): Neapolitan (nap) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18809
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:24Z
+- [[Bounty proposal] docs(python-cli): Venetian (vec) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18807
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:16Z
+- [[Bounty proposal] docs(python-cli): Sicilian (scn) AI agent quickstart guide ($25 proposed)]
+  - Repository: BasedHardware/omi
+  - URL: https://github.com/BasedHardware/omi/issues/18806
+  - Details:
+    - Repository: BasedHardware/omi
+    - Comments: 0
+    - Last Updated: 2026-09-25T01:12:12Z
+```
