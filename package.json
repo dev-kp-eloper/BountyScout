@@ -1,0 +1,20 @@
+{
+  "name": "bounty-scout",
+  "version": "1.0.0",
+  "description": "Scan GitHub for bounty opportunities",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "scan": "node src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
