@@ -1,0 +1,33 @@
+{
+  "scan_time": "2026-10-11 01:39 UTC",
+  "opportunities": [
+    {
+      "title": "🌐 AI 官方内容追踪报告 2026-10-11",
+      "url": "https://github.com/litang9/big_model_radar/issues/533",
+      "repository": "litang9/big_model_radar",
+      "comments": 13,
+      "last_updated": "2026-10-11T01:38:43Z"
+    },
+    {
+      "title": "ouroboros: [DT.7] Independent assessment & bounty decision",
+      "url": "https://github.com/NobuData/ouroboros/issues/1407",
+      "repository": "NobuData/ouroboros",
+      "comments": 14,
+      "last_updated": "2026-10-11T01:39:03Z"
+    },
+    {
+      "title": "Text pattern match starts ~60s before the ad read; intro refinement doesn't reach the intro line",
+      "url": "https://github.com/ttlequals0/MinusPod/issues/837",
+      "repository": "ttlequals0/MinusPod",
+      "comments": 0,
+      "last_updated": "2026-10-11T01:34:06Z"
+    },
+    {
+      "title": "Factorization network across boards with a hash-chained ledger (one program, several roles)",
+      "url": "https://github.com/jabrena/juno/issues/43",
+      "repository": "jabrena/juno",
+      "comments": 2,
+      "last_updated": "2026-10-11T00:14:30Z"
+    }
+  ]
+}
