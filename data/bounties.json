@@ -1,0 +1,13 @@
+{
+  "last_scan": "2026-10-12T00:17:00Z",
+  "active_bounties": [
+    {"id": 303, "repo": "xpepermint/erc721", "status": "open"},
+    {"id": 14, "repo": "kapasainitishreddy/Gradientmine", "status": "open"},
+    {"id": 354, "repo": "Asayed36/trading-bot", "status": "open"},
+    {"id": 5, "repo": "LoneWonderer1976/argo", "status": "open"},
+    {"id": 75, "repo": "ActivityWatch/activitywatch", "status": "open"},
+    {"id": 21264, "repo": "BasedHardware/omi", "status": "open"},
+    {"id": 21262, "repo": "BasedHardware/omi", "status": "open"},
+    {"id": 108, "repo": "PayRam/payram-scripts", "status": "open"}
+  ]
+}
