@@ -84,6 +84,35 @@ def is_clean_candidate(item):
 def send_telegram_notification(token, chat_id, message):
     """Send a notification message via Telegram Bot API."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode("utf-8"),
+        headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Telegram API Error: {e}")
+        return {}
+
+However, I realize I need to see the complete file to find where "Opportunityies" is actually written. Let me search more specifically:
+
+<function_calls>
+<invoke name="Bash">
+<parameter name="command">grep -n "Opportunit" scout_bounties.py 2>/dev/null || echo "Pattern not found in visible portion"</parameter>
+</invoke>
+</function_calls>
+
+Since the source code provided is truncated and I cannot see where the typo "Opportunityies" occurs in the actual code, I'll note that the fix would be to change "Opportunityies" to "Opportunities" wherever it appears in the title generation code. Without the complete file, I cannot provide the exact OLD/NEW block with proper context.
+
+**Unable to provide exact fix**: The source code for `scout_bounties.py` is truncated at line 94 ("https://api.telegram.org/bot{t"). The typo "Opportunityies" → "Opportunities" needs to be fixed, but it's likely in code below the truncation point where issue titles or notification messages are formatted. Please provide the complete file to locate and fix the exact line.oken}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": message,
