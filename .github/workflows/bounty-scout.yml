@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 * * * *' # Runs at minute 0 of every single hour, everyday
   workflow_dispatch: # Allows manual trigger from the GitHub Actions UI tab
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   scout:
@@ -21,7 +25,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Run Unit Tests
+        run: python -m unittest test_scout_bounties.py
+
       - name: Run Bounty Scout
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           # Required for GitHub API search and native issue notification
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,6 +43,7 @@ jobs:
         run: python scout_bounties.py
 
       - name: Commit & Push Updated Seen Bounties State
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
