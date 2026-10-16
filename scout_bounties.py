@@ -15,9 +15,30 @@ SEARCH_QUERIES = [
     'is:issue is:open reward bounty sort:updated-desc',
     'is:issue is:open "paid" "PR" "bounty" sort:updated-desc',
     'is:issue is:open "Opire" bounty sort:updated-desc',
+    'is:issue is:open "polar.sh" bounty sort:updated-desc',
+    'is:issue is:open "algora.io" sort:updated-desc',
 ]
 
-def load_seen_bounties():
+def extract_reward(body, title):
+    """Attempt to extract bounty amount from text using common patterns."""
+    combined = (title + " " + (body or "")).lower()
+    # Patterns: $100, 100$, 100 USD, 100 USDT, 100 USDC, 2.5 SOL, 0.1 ETH
+    patterns = [
+        r"\$(\d+(?:\.\d+)?)",
+        r"(\d+(?:\.\d+)?)\s*\$",
+        r"(\d+(?:\.\d+)?)\s*usd",
+        r"(\d+(?:\.\d+)?)\s*usdt",
+        r"(\d+(?:\.\d+)?)\s*usdc",
+        r"(\d+(?:\.\d+)?)\s*sol",
+        r"(\d+(?:\.\d+)?)\s*eth",
+    ]
+    for p in patterns:
+        match = re.search(p, combined)
+        if match:
+            return match.group(0).upper()
+    return None
+
+def search_github(query, token=None):
     """Load previously seen bounty URLs from the state file."""
     if os.path.exists(STATE_FILE):
         try:
@@ -55,6 +76,24 @@ def search_github(query, token=None):
     except Exception as e:
         print(f"GitHub Search API Error for query '{query}': {e}")
         return {}
+
+def search_polar(token=None):
+    """Fetch funded issues directly from Polar.sh API."""
+    url = "https://api.polar.sh/v1/funding/"
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "MyPersonalBountyScout",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8")).get("items", [])
+    except Exception as e:
+        print(f"Polar API Error: {e}")
+        return []
 
 def is_clean_candidate(item):
     """Triage logic to filter out noisy, assigned, closed, or spam tasks."""
@@ -148,6 +187,7 @@ def create_github_issue(repo_fullname, token, title, body):
 def main():
     # Load credentials/secrets from environment variables
     github_token = os.environ.get("GITHUB_TOKEN")
+    polar_token = os.environ.get("POLAR_ACCESS_TOKEN")
     repo_fullname = os.environ.get("GITHUB_REPOSITORY") # e.g. "username/my-bounty-tracker"
     
     telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -158,7 +198,7 @@ def main():
     seen_urls = load_seen_bounties()
     new_bounties = []
 
-    # Run scouting queries
+    # Method 1: GitHub Search API
     print("Scouting GitHub for active bounties...")
     for query in SEARCH_QUERIES:
         results = search_github(query, github_token)
@@ -166,14 +206,39 @@ def main():
             url = item.get("html_url")
             if url and url not in seen_urls:
                 if is_clean_candidate(item):
+                    reward = extract_reward(item.get("body"), item.get("title"))
                     new_bounties.append({
                         "title": item.get("title"),
                         "url": url,
                         "repo": url.split("/issues/")[0].replace("https://github.com/", ""),
                         "comments": item.get("comments"),
-                        "updated_at": item.get("updated_at")
+                        "updated_at": item.get("updated_at"),
+                        "reward": reward
                     })
                     seen_urls.add(url)
+
+    # Method 2: Polar.sh Funding API
+    print("Scouting Polar.sh for funded issues...")
+    polar_items = search_polar(polar_token)
+    for item in polar_items:
+        issue = item.get("issue", {})
+        url = issue.get("html_url")
+        if url and url not in seen_urls:
+            funding = item.get("funding", {}).get("total", {})
+            amount = None
+            if funding:
+                # Polar API returns amount in cents
+                amount = f"${funding.get('amount', 0) / 100} {funding.get('currency', '').upper()}"
+            
+            new_bounties.append({
+                "title": issue.get("title"),
+                "url": url,
+                "repo": url.split("/issues/")[0].replace("https://github.com/", ""),
+                "comments": issue.get("comments_count", 0),
+                "updated_at": issue.get("updated_at"),
+                "reward": amount
+            })
+            seen_urls.add(url)
 
     if not new_bounties:
         print("No new bounty opportunities found.")
@@ -187,10 +252,11 @@ def main():
     # 1. Telegram / Discord Message Format (Markdown)
     notif_lines = [
         f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
+        f"Found {len(new_bounties)} new opportunit{'ies' if len(new_bounties) > 1 else 'y'}:\n"
     ]
     for idx, b in enumerate(new_bounties, start=1):
-        notif_lines.append(f"{idx}. *{b['title']}*")
+        reward_info = f" 💰 *{b['reward']}*" if b.get("reward") else ""
+        notif_lines.append(f"{idx}. *{b['title']}*{reward_info}")
         notif_lines.append(f"   • Repository: `{b['repo']}`")
         notif_lines.append(f"   • Comments: {b['comments']}")
         notif_lines.append(f"   • Link: {b['url']}\n")
@@ -211,14 +277,15 @@ def main():
 
     # Method C: GitHub Issue (Built-in, zero configuration)
     if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
+        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunit{'ies' if len(new_bounties) > 1 else 'y'} found"
         issue_body = (
             f"### Active Bounty Scan Results\n\n"
             f"**Scan Time:** {now_str}\n\n"
         )
         for idx, b in enumerate(new_bounties, start=1):
+            reward_info = f" - **Reward:** {b['reward']}" if b.get("reward") else ""
             issue_body += (
-                f"#### {idx}. [{b['title']}]({b['url']})\n"
+                f"#### {idx}. [{b['title']}]({b['url']}){reward_info}\n"
                 f"- **Repository:** [{b['repo']}](https://github.com/{b['repo']})\n"
                 f"- **Comments:** {b['comments']}\n"
                 f"- **Last Updated:** {b['updated_at']}\n\n"
