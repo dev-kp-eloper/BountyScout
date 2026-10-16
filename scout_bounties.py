@@ -145,6 +145,11 @@ def create_github_issue(repo_fullname, token, title, body):
     except Exception as e:
         print(f"Failed to create GitHub Issue notification: {e}")
 
+def format_opportunity_count(count):
+    """Return a correctly pluralized opportunity count."""
+    noun = "opportunity" if count == 1 else "opportunities"
+    return f"{count} new {noun}"
+
 def main():
     # Load credentials/secrets from environment variables
     github_token = os.environ.get("GITHUB_TOKEN")
@@ -185,9 +190,10 @@ def main():
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     
     # 1. Telegram / Discord Message Format (Markdown)
+    opportunity_count = format_opportunity_count(len(new_bounties))
     notif_lines = [
         f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
+        f"Found {opportunity_count}:\n"
     ]
     for idx, b in enumerate(new_bounties, start=1):
         notif_lines.append(f"{idx}. *{b['title']}*")
@@ -211,7 +217,7 @@ def main():
 
     # Method C: GitHub Issue (Built-in, zero configuration)
     if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
+        issue_title = f"🎯 Bounty Alert: {opportunity_count.title()} found"
         issue_body = (
             f"### Active Bounty Scan Results\n\n"
             f"**Scan Time:** {now_str}\n\n"
