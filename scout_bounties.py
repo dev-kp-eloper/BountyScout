@@ -9,6 +9,48 @@ from datetime import datetime, timezone
 STATE_FILE = "seen_bounties.json"
 MAX_COMMENTS = 25 # Filter out overcrowded threads
 
+# Matches EVM-style and bech32 wallet addresses pasted into issue bodies.
+WALLET_ADDRESS_RE = re.compile(
+    r"\b0x[a-fA-F0-9]{40}\b|\bbc1[a-z0-9]{25,}\b",
+    re.IGNORECASE,
+)
+
+# Keywords that, on their own, mean the issue is spam / not a coding task.
+BLOCKLIST_TERMS = (
+    "airdrop", "referral", "casino", "gambling", "trading bot",
+    "blog post", "article writing", "tutorial proposal", "content creator",
+)
+
+# Payment-thread detection: an issue that combines a crypto asset with payout
+# language is a "send me your wallet" thread, not a bounty to work on.
+CRYPTO_ASSET_TERMS = (
+    "usdc", "usdt", "usd coin", "bitcoin", "btc", "ethereum", "solana",
+    "crypto", "airdrop", "stablecoin",
+)
+PAYOUT_TERMS = (
+    "wallet", "payout", "deliveries", "escrow", "remittance",
+)
+
+
+def pluralize(count, singular, plural=None):
+    """Return the noun form matching ``count`` (avoids 'opportunityies')."""
+    if plural is None:
+        plural = f"{singular}s"
+    return singular if count == 1 else plural
+
+
+def _contains_term(text, terms):
+    """Word-boundary match for any of ``terms`` inside ``text``."""
+    return any(re.search(rf"\b{re.escape(term)}", text) for term in terms)
+
+
+def looks_like_payment_thread(title, body):
+    """True for crypto payout / wallet-collection threads rather than tasks."""
+    if WALLET_ADDRESS_RE.search(title) or WALLET_ADDRESS_RE.search(body):
+        return True
+    text = f"{title} {body}"
+    return _contains_term(text, CRYPTO_ASSET_TERMS) and _contains_term(text, PAYOUT_TERMS)
+
 # GitHub search queries for active bounty opportunities
 SEARCH_QUERIES = [
     'is:issue is:open bounty in:title,body sort:updated-desc',
@@ -65,20 +107,24 @@ def is_clean_candidate(item):
     if item.get("assignees"):
         return False
     # 3. Skip if thread is overcrowded (highly competitive)
-    if int(item.get("comments", 0)) > MAX_COMMENTS:
+    try:
+        comments = int(item.get("comments") or 0)
+    except (TypeError, ValueError):
+        comments = 0
+    if comments > MAX_COMMENTS:
         return False
-    
-    title = str(item.get("title", "")).lower()
-    body = str(item.get("body", "")).lower()
-    
+
+    title = str(item.get("title") or "").lower()
+    body = str(item.get("body") or "").lower()
+
     # 4. Skip cryptocurrency/article writing/spam keywords
-    blocklist = [
-        "airdrop", "referral", "casino", "gambling", "trading bot", 
-        "blog post", "article writing", "tutorial proposal", "content creator"
-    ]
-    if any(term in title or term in body for term in blocklist):
+    if _contains_term(f"{title} {body}", BLOCKLIST_TERMS):
         return False
-        
+
+    # 5. Skip crypto payout / wallet-collection threads (not actionable tasks)
+    if looks_like_payment_thread(title, body):
+        return False
+
     return True
 
 def send_telegram_notification(token, chat_id, message):
@@ -187,7 +233,7 @@ def main():
     # 1. Telegram / Discord Message Format (Markdown)
     notif_lines = [
         f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
+        f"Found {len(new_bounties)} new {pluralize(len(new_bounties), 'opportunity', 'opportunities')}:\n"
     ]
     for idx, b in enumerate(new_bounties, start=1):
         notif_lines.append(f"{idx}. *{b['title']}*")
@@ -211,7 +257,10 @@ def main():
 
     # Method C: GitHub Issue (Built-in, zero configuration)
     if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
+        issue_title = (
+            f"🎯 Bounty Alert: {len(new_bounties)} New "
+            f"{pluralize(len(new_bounties), 'Opportunity', 'Opportunities')} found"
+        )
         issue_body = (
             f"### Active Bounty Scan Results\n\n"
             f"**Scan Time:** {now_str}\n\n"
