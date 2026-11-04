@@ -1,0 +1,5 @@
+```json
+{
+  "summary": "The Active Bounty Scan Results show 8 items across different repositories, with 6 repositories related to BountyScout and 2 others. Each item indicates a Bounty Alert with the number of new opportunities found, and all items have no comments and recent updates. The repositories are [johnchampaign/star-wars-rebellion](https://github.com/johnchampaign/star-wars-rebellion), [uknwplayer/BountyScout](https://github.com/uknwplayer/BountyScout), [JoeMafiaNEO/dungeon-crawler](https://github.com/JoeMafiaNEO/dungeon-crawler), [vansh-09/BountyScout](https://github.com/vansh-09/BountyScout), [freedom-winds/BountyScout](https://github.com/freedom-winds/BountyScout), and [BasedHardware/omi](https://github.com/BasedHardware/omi). Two items in [BasedHardware/omi](https://github.com/BasedHardware/omi) have 1 comment each."
+}
+```
