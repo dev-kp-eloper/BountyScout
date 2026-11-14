@@ -1,18 +1,41 @@
-# 🎯 Bounty Scout: Hourly Notification System
+# 🎯 Bounty Scout: Hourly Notification System + Devin Dispatch
 
-A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties, filters out competitive/crypto spam, and alerts you instantly.
+A lightweight, state-tracking GitHub bounty scanner that runs **hourly**, searches for new open bounties across **two tracks**, filters out competitive/crypto spam, and alerts you instantly.
 
 Since it tracks seen bounty URLs, **it will only notify you once per bounty** (no spam).
+
+## 💰 The Two Tracks
+
+| Track | Source | Reward |
+|---|---|---|
+| **Hanzo** (`hanzo` label) | Issues labeled `bounty` across `hanzoai`, `hanzo-apps`, `hanzo-go`, `hanzo-js` orgs — same feed as [hanzo.ai/bounty](https://hanzo.ai/bounty) | +100–500 leaderboard pts + $20 AI credits per merged PR |
+| **Paid** (`paid` label) | Algora, Opire, Polar, and generic `$`-amount bounty issues | Cash/crypto payout on merge, via each bounty's platform |
+
+Every digest issue shows the detected **source** and **reward** per bounty, sorted Hanzo → priced → generic.
+
+## 🤖 Dispatching a Fix to Devin
+
+Each bounty in the digest issue ships with a copy-paste command:
+
+```bash
+devin --cloud -p "Attempt this bounty: <issue-url> ..."
+```
+
+Run it, and a Devin Cloud session forks the repo, implements the fix, runs the project's checks, and opens an upstream PR with `Fixes #N` plus an AI-assistance disclosure.
+
+**Payout attribution matters:** bounty platforms credit the GitHub account that authored the PR. Make sure Devin's `gh` session authenticates as *your* account so payouts and Hanzo points land on you.
+
+**Hanzo note:** their rules ask hunters to comment that they're taking an issue first. The generated prompt skips claim comments by default — prepend "Comment 'Taking this' on the issue" to the prompt if you want to stake the claim before working.
 
 ---
 
 ## 🚀 How It Works
 
 1. **GitHub Action Scheduled Trigger:** Runs automatically at minute `0` of every hour.
-2. **Scouts GitHub:** Queries active bounty search keywords using the GitHub Search API.
+2. **Scouts GitHub:** Queries active bounty search keywords plus the Hanzo org bounty feed using the GitHub Search API.
 3. **Triages Candidates:** Skips pull requests, already-assigned issues, overcrowded threads (>25 comments), and crypto-related spam.
 4. **State Machine Comparison:** Composed against `seen_bounties.json` to extract strictly **new** opportunities.
-5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord).
+5. **Instant Notifications:** Dispatches updates through your preferred channel (GitHub Issues, Telegram, or Discord). Alert labels (`bounty-alert`, `hanzo`, `paid`) are auto-created on first run.
 6. **Persists State:** Saves the updated seen list back to the repository so you don't receive duplicate alerts on the next run.
 
 ---
