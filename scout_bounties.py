@@ -179,7 +179,10 @@ def main():
         print("No new bounty opportunities found.")
         return
 
-    print(f"Discovered {len(new_bounties)} NEW bounty opportunities!")
+    bounty_count = len(new_bounties)
+    opportunity_word = "opportunity" if bounty_count == 1 else "opportunities"
+
+    print(f"Discovered {bounty_count} NEW bounty opportunities!")
 
     # Format notification message
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -187,7 +190,7 @@ def main():
     # 1. Telegram / Discord Message Format (Markdown)
     notif_lines = [
         f"🎯 *New Bounty Alert* ({now_str})",
-        f"Found {len(new_bounties)} new opportunity{'ies' if len(new_bounties) > 1 else ''}:\n"
+        f"Found {bounty_count} new {opportunity_word}:\n"
     ]
     for idx, b in enumerate(new_bounties, start=1):
         notif_lines.append(f"{idx}. *{b['title']}*")
@@ -211,7 +214,7 @@ def main():
 
     # Method C: GitHub Issue (Built-in, zero configuration)
     if github_token and repo_fullname:
-        issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
+        issue_title = f"🎯 Bounty Alert: {bounty_count} New {opportunity_word.title()} found"
         issue_body = (
             f"### Active Bounty Scan Results\n\n"
             f"**Scan Time:** {now_str}\n\n"
