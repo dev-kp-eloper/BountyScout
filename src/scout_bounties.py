@@ -1,0 +1,1 @@
+// Add logic to update seen_bounties.json correctly
