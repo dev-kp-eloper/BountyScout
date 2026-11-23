@@ -2,15 +2,19 @@ name: Scout Active Bounties Hourly
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at minute 0 of every single hour, everyday
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI tab
+    - cron: '0 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   scout:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to commit and persist seen_bounties.json state file
-      issues: write   # Needed if you choose Option A (Native GitHub Issue alerts)
+      contents: write
+      issues: write
 
     steps:
       - name: Checkout Code
@@ -21,20 +25,20 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Run Unit Tests
+        run: python -m unittest test_scout_bounties.py
+
       - name: Run Bounty Scout
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
-          # Required for GitHub API search and native issue notification
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # Optional: Configure Telegram notification secrets
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          
-          # Optional: Configure Discord notification secrets
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python scout_bounties.py
 
       - name: Commit & Push Updated Seen Bounties State
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
